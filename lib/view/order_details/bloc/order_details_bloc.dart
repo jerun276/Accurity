@@ -1,6 +1,9 @@
+// ignore: depend_on_referenced_packages
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../../../core/services/photo_service.dart'; 
 import '../../../data/models/order.model.dart';
 import '../../../data/repositories/order_repository.dart';
 
@@ -9,12 +12,17 @@ part 'order_details_state.dart';
 
 class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
   final OrderRepository _orderRepository;
+  final PhotoService _photoService; // Add PhotoService
 
-  OrderDetailsBloc({required OrderRepository orderRepository})
-    : _orderRepository = orderRepository,
-      super(OrderDetailsInitial()) {
+  OrderDetailsBloc({
+    required OrderRepository orderRepository,
+    required PhotoService photoService, // Inject PhotoService
+  }) : _orderRepository = orderRepository,
+       _photoService = photoService,
+       super(OrderDetailsInitial()) {
     on<LoadOrderDetails>(_onLoadOrderDetails);
     on<OrderFieldChanged>(_onFormFieldChanged);
+    on<AddPhotoRequested>(_onAddPhotoRequested); // Add handler
   }
 
   Future<void> _onLoadOrderDetails(
@@ -30,58 +38,189 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
     }
   }
 
-  /// This handler is the core of the "automatic save" feature.
   Future<void> _onFormFieldChanged(
     OrderFieldChanged event,
     Emitter<OrderDetailsState> emit,
   ) async {
     if (state is OrderDetailsLoaded) {
       final currentOrder = (state as OrderDetailsLoaded).order;
-
-      // Use a switch to create a new Order object with the updated field.
-      // The `copyWith` method from our model is essential here.
       final updatedOrder = _mapFieldChangeToOrder(
         currentOrder,
         event.fieldName,
         event.value,
       );
-
-      // Emit the new state immediately so the UI updates without any lag.
       emit(OrderDetailsLoaded(updatedOrder));
-
-      // Asynchronously save the updated order to the local database.
       await _orderRepository.saveOrder(updatedOrder);
     }
   }
 
-  /// A helper function to map a field name string to the correct `copyWith` parameter.
+  Future<void> _onAddPhotoRequested(
+    AddPhotoRequested event,
+    Emitter<OrderDetailsState> emit,
+  ) async {
+    if (state is OrderDetailsLoaded) {
+      final currentOrder = (state as OrderDetailsLoaded).order;
+      final newPhotoFile = await _photoService.pickAndCompressImage(
+        source: event.source,
+      );
+      if (newPhotoFile == null) return;
+
+      final updatedPhotoList = List<String>.from(currentOrder.photoPaths)
+        ..add(newPhotoFile.path);
+      final updatedOrder = currentOrder.copyWith(photoPaths: updatedPhotoList);
+
+      emit(OrderDetailsLoaded(updatedOrder));
+      await _orderRepository.saveOrder(updatedOrder);
+    }
+  }
+
   Order _mapFieldChangeToOrder(Order order, String fieldName, dynamic value) {
+    // This switch is now complete based on your Order model.
     switch (fieldName) {
-      // --- Neighbourhood ---
+      // Order Details
+      case 'clientFileNumber':
+        return order.copyWith(clientFileNumber: value);
+      case 'firmFileNumber':
+        return order.copyWith(firmFileNumber: value);
+      case 'address':
+        return order.copyWith(address: value);
+      case 'applicantName':
+        return order.copyWith(applicantName: value);
+      case 'appointment':
+        return order.copyWith(appointment: value);
+      case 'client':
+        return order.copyWith(client: value);
+      case 'lender':
+        return order.copyWith(lender: value);
+      case 'serviceType':
+        return order.copyWith(serviceType: value);
+      case 'loanType':
+        return order.copyWith(loanType: value);
+      // Neighbourhood
       case 'natureOfDistrict':
-        return order.copyWith(natureOfDistrict: value as String?);
+        return order.copyWith(natureOfDistrict: value);
       case 'developmentType':
-        return order.copyWith(developmentType: value as String?);
+        return order.copyWith(developmentType: value);
       case 'isGatedCommunity':
-        return order.copyWith(isGatedCommunity: value as bool?);
-
-      // --- Site ---
+        return order.copyWith(isGatedCommunity: value);
+      // Site
       case 'configuration':
-        return order.copyWith(configuration: value as String?);
+        return order.copyWith(configuration: value);
       case 'topography':
-        return order.copyWith(topography: value as String?);
+        return order.copyWith(topography: value);
       case 'waterSupplyType':
-        return order.copyWith(waterSupplyType: value as String?);
+        return order.copyWith(waterSupplyType: value);
       case 'isSepticWell':
-        return order.copyWith(isSepticWell: value as bool?);
+        return order.copyWith(isSepticWell: value);
       case 'streetscape':
-        return order.copyWith(streetscape: value as List<String>?);
-
-      // ... ADD A CASE FOR EVERY SINGLE FIELD FROM YOUR ORDER MODEL ...
+        return order.copyWith(streetscape: value);
+      case 'siteInfluence':
+        return order.copyWith(siteInfluence: value);
+      case 'siteImprovements':
+        return order.copyWith(siteImprovements: value);
+      case 'driveway':
+        return order.copyWith(driveway: value);
+      // Structural Details
+      case 'builtInPast10Years':
+        return order.copyWith(builtInPast10Years: value);
+      case 'propertyType':
+        return order.copyWith(propertyType: value);
+      case 'designStyle':
+        return order.copyWith(designStyle: value);
+      case 'construction':
+        return order.copyWith(construction: value);
+      case 'sidingType':
+        return order.copyWith(sidingType: value);
+      case 'roofType':
+        return order.copyWith(roofType: value);
+      case 'windowType':
+        return order.copyWith(windowType: value);
+      case 'parking':
+        return order.copyWith(parking: value);
+      case 'garage':
+        return order.copyWith(garage: value);
+      case 'occupancy':
+        return order.copyWith(occupancy: value);
+      // Mechanical
+      case 'heatingType':
+        return order.copyWith(heatingType: value);
+      case 'electricalType':
+        return order.copyWith(electricalType: value);
+      case 'waterType':
+        return order.copyWith(waterType: value);
+      // Basement
+      case 'basementType':
+        return order.copyWith(basementType: value);
+      case 'basementFinish':
+        return order.copyWith(basementFinish: value);
+      case 'foundationType':
+        return order.copyWith(foundationType: value);
+      case 'basementRooms':
+        return order.copyWith(basementRooms: value);
+      case 'basementFeatures':
+        return order.copyWith(basementFeatures: value);
+      case 'basementFlooring':
+        return order.copyWith(basementFlooring: value);
+      case 'basementCeilingType':
+        return order.copyWith(basementCeilingType: value);
+      // Levels
+      case 'mainLevelRooms':
+        return order.copyWith(mainLevelRooms: value);
+      case 'mainLevelFeatures':
+        return order.copyWith(mainLevelFeatures: value);
+      case 'mainLevelFlooring':
+        return order.copyWith(mainLevelFlooring: value);
+      case 'secondLevelRooms':
+        return order.copyWith(secondLevelRooms: value);
+      case 'secondLevelFeatures':
+        return order.copyWith(secondLevelFeatures: value);
+      case 'secondLevelFlooring':
+        return order.copyWith(secondLevelFlooring: value);
+      case 'thirdLevelRooms':
+        return order.copyWith(thirdLevelRooms: value);
+      case 'thirdLevelFeatures':
+        return order.copyWith(thirdLevelFeatures: value);
+      case 'thirdLevelFlooring':
+        return order.copyWith(thirdLevelFlooring: value);
+      case 'fourthLevelRooms':
+        return order.copyWith(fourthLevelRooms: value);
+      case 'fourthLevelFeatures':
+        return order.copyWith(fourthLevelFeatures: value);
+      case 'fourthLevelFlooring':
+        return order.copyWith(fourthLevelFlooring: value);
+      // Component Age
+      case 'roofAge':
+        return order.copyWith(roofAge: value);
+      case 'windowAge':
+        return order.copyWith(windowAge: value);
+      case 'furnaceAge':
+        return order.copyWith(furnaceAge: value);
+      case 'kitchenAge':
+        return order.copyWith(kitchenAge: value);
+      case 'bathAge':
+        return order.copyWith(bathAge: value);
+      // Notes
+      case 'roofNotes':
+        return order.copyWith(roofNotes: value);
+      case 'windowNotes':
+        return order.copyWith(windowNotes: value);
+      case 'kitchenNotes':
+        return order.copyWith(kitchenNotes: value);
+      case 'bathNotes':
+        return order.copyWith(bathNotes: value);
+      case 'furnaceNotes':
+        return order.copyWith(furnaceNotes: value);
+      // Value Indicators
+      case 'bankValue':
+        return order.copyWith(bankValue: value);
+      case 'ownerValue':
+        return order.copyWith(ownerValue: value);
+      case 'purchasePrice':
+        return order.copyWith(purchasePrice: value);
+      case 'purchaseDate':
+        return order.copyWith(purchaseDate: value);
 
       default:
-        // If the field name doesn't match, return the original order.
-        // You might want to add logging here for debugging.
         print('Warning: Unhandled field name in OrderDetailsBloc: $fieldName');
         return order;
     }

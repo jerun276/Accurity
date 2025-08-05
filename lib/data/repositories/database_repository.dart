@@ -139,10 +139,58 @@ class DatabaseRepository {
 
   /// Inserts the initial data for all dropdown menus into the database.
   /// This data comes directly from the "Inspection App Fields.csv".
+  /// Inserts the initial data for all dropdown menus into the database.
+  /// This data comes directly from the "Inspection App Fields.csv".
   Future<void> _seedDropdowns(Database db) async {
     final batch = db.batch();
 
-    // Example for PropertyType
+    // --- Order Details ---
+    _addDropdownToBatch(batch, 'ServiceType', [
+      'Full Appraisal',
+      'Drive-by',
+      'Desktop',
+      'Progress Inspection',
+    ]);
+    _addDropdownToBatch(batch, 'LoanType', [
+      'Purchase',
+      'Refinance',
+      'New Construction',
+    ]);
+
+    // --- Neighbourhood ---
+    _addDropdownToBatch(batch, 'NatureOfDistrict', [
+      'Urban',
+      'Suburban',
+      'Rural',
+    ]);
+    _addDropdownToBatch(batch, 'DevelopmentType', [
+      'Typical',
+      'New',
+      'Mixed Use',
+    ]);
+
+    // --- Site ---
+    _addDropdownToBatch(batch, 'Configuration', ['Typical', 'Atypical']);
+    _addDropdownToBatch(batch, 'Topography', ['Level', 'Sloped', 'Hilly']);
+    _addDropdownToBatch(batch, 'WaterSupplyType', [
+      'Municipal',
+      'Well',
+      'Cistern',
+      'Dugout',
+    ]);
+    _addDropdownToBatch(batch, 'SiteInfluence', [
+      'Neutral',
+      'Positive',
+      'Negative',
+    ]);
+    _addDropdownToBatch(batch, 'Driveway', [
+      'Asphalt',
+      'Concrete',
+      'Gravel',
+      'Interlock',
+    ]);
+
+    // --- Structural Details ---
     _addDropdownToBatch(batch, 'PropertyType', [
       'Detached',
       'Semi-detached',
@@ -152,7 +200,20 @@ class DatabaseRepository {
       'Apartment',
       'Mobile',
     ]);
-    // Example for SidingType
+    _addDropdownToBatch(batch, 'DesignStyle', [
+      '1 Storey',
+      '1.5 Storey',
+      '2 Storey',
+      '2.5 Storey',
+      '3 Storey',
+      'Split Level',
+      'Apartment',
+    ]);
+    _addDropdownToBatch(batch, 'Construction', [
+      'Wood Frame',
+      'Concrete',
+      'Steel Frame',
+    ]);
     _addDropdownToBatch(batch, 'SidingType', [
       'Vinyl',
       'Brick',
@@ -160,18 +221,103 @@ class DatabaseRepository {
       'Cement Board',
       'Aluminum',
       'Wood',
+      'Stucco',
     ]);
-    // Example for WaterSupplyType
-    _addDropdownToBatch(batch, 'WaterSupplyType', [
-      'Municipal',
-      'Well',
-      'Cistern',
-      'Dugout',
+    _addDropdownToBatch(batch, 'RoofType', [
+      'Asphalt Shingle',
+      'Metal',
+      'Clay Tile',
+      'Slate',
+      'Wood Shake',
+    ]);
+    _addDropdownToBatch(batch, 'WindowType', [
+      'Vinyl',
+      'Wood',
+      'Aluminum',
+      'Fiberglass',
+    ]);
+    _addDropdownToBatch(batch, 'Parking', [
+      'Driveway',
+      'Carport',
+      'Underground',
+      'Assigned Space',
+      'None',
+    ]);
+    _addDropdownToBatch(batch, 'Garage', [
+      'Attached',
+      'Detached',
+      'None',
+      'Single',
+      'Double',
+      'Triple',
+    ]);
+    _addDropdownToBatch(batch, 'Occupancy', ['Owner', 'Tenant', 'Vacant']);
+
+    // --- Mechanical ---
+    _addDropdownToBatch(batch, 'HeatingType', [
+      'Forced Air',
+      'Boiler',
+      'Heat Pump',
+      'Geothermal',
+    ]);
+    _addDropdownToBatch(batch, 'ElectricalType', ['Breaker Panel', 'Fuse Box']);
+    _addDropdownToBatch(batch, 'WaterType', ['Municipal', 'Well']);
+
+    // --- Basement ---
+    _addDropdownToBatch(batch, 'BasementType', [
+      'Full',
+      'Partial',
+      'Crawl Space',
+      'Slab',
+    ]);
+    _addDropdownToBatch(batch, 'BasementFinish', [
+      'Finished',
+      'Partially Finished',
+      'Unfinished',
+    ]);
+    _addDropdownToBatch(batch, 'FoundationType', [
+      'Poured Concrete',
+      'Block',
+      'Stone',
+    ]);
+    _addDropdownToBatch(batch, 'BasementRooms', [
+      'Rec Room',
+      'Bedroom',
+      'Bathroom',
+      'Office',
+    ]);
+    _addDropdownToBatch(batch, 'BasementFeatures', [
+      'Walk-out',
+      'Separate Entrance',
+      'Wet Bar',
+    ]);
+    _addDropdownToBatch(batch, 'BasementFlooring', [
+      'Carpet',
+      'Laminate',
+      'Vinyl',
+      'Concrete',
+    ]);
+    _addDropdownToBatch(batch, 'BasementCeilingType', [
+      'Drywall',
+      'Drop Ceiling',
+      'Open Joist',
     ]);
 
-    // ... ADD ALL OTHER DROPDOWN LISTS FROM YOUR EXCEL SHEET HERE ...
-    // Use the `_addDropdownToBatch` helper for each category.
+    // --- Component Age ---
+    final ageRanges = [
+      '0-5 yrs',
+      '6-10 yrs',
+      '11-15 yrs',
+      '16-20 yrs',
+      '21+ yrs',
+    ];
+    _addDropdownToBatch(batch, 'RoofAge', ageRanges);
+    _addDropdownToBatch(batch, 'WindowAge', ageRanges);
+    _addDropdownToBatch(batch, 'FurnaceAge', ageRanges);
+    _addDropdownToBatch(batch, 'KitchenAge', ageRanges);
+    _addDropdownToBatch(batch, 'BathAge', ageRanges);
 
+    // Commit all the inserts in a single transaction.
     await batch.commit(noResult: true);
   }
 
@@ -182,12 +328,7 @@ class DatabaseRepository {
     }
   }
 
-  // --- CRUD OPERATIONS ---
-
   /// Saves an order to the database.
-  ///
-  /// This performs an "upsert": if the order has a `localId`, it's an UPDATE.
-  /// If `localId` is null, it's an INSERT.
   Future<Order> saveOrder(Order order) async {
     final db = await database;
     final map = order.toDbMap();

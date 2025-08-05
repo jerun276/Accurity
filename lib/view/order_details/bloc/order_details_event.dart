@@ -1,5 +1,7 @@
 part of 'order_details_bloc.dart';
 
+
+
 sealed class OrderDetailsEvent extends Equatable {
   const OrderDetailsEvent();
   @override
@@ -25,4 +27,12 @@ class OrderFieldChanged extends OrderDetailsEvent {
 
   @override
   List<Object?> get props => [fieldName, value];
+}
+
+class AddPhotoRequested extends OrderDetailsEvent {
+  final ImageSource source;
+  const AddPhotoRequested({required this.source});
+
+  @override
+  List<Object?> get props => [source];
 }

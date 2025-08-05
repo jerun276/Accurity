@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs access to the photo library to attach images to inspections.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs access to the camera to take photos for inspections.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs access to the microphone to record videos for inspections.</string>
 </dict>
 </plist>

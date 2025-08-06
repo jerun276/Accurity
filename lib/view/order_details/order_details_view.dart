@@ -6,8 +6,6 @@ import '../../../core/constant/text_styles.dart';
 import '../../../core/services/photo_service.dart';
 import '../../../data/repositories/order_repository.dart';
 import 'bloc/order_details_bloc.dart';
-
-// --- Import ALL Section Views ---
 import 'sections/basement_view.dart';
 import 'sections/component_age_view.dart';
 import 'sections/fourth_level_view.dart';
@@ -43,7 +41,6 @@ class OrderDetailsView extends StatelessWidget {
 class OrderDetailsPage extends StatelessWidget {
   const OrderDetailsPage({super.key});
 
-  // --- List of section titles for the tabs ---
   static const List<String> _sectionTitles = [
     'Order Info',
     'Neighbourhood',
@@ -61,7 +58,6 @@ class OrderDetailsPage extends StatelessWidget {
     'Sketch',
   ];
 
-  // --- The list of all the view widgets, in the same order as the titles ---
   static const List<Widget> _sectionViews = [
     OrderInfoView(),
     NeighbourhoodView(),
@@ -81,9 +77,9 @@ class OrderDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Wrap the entire Scaffold in a DefaultTabController to sync the TabBar and TabBarView.
     return DefaultTabController(
       length: _sectionTitles.length,
+      // ignore: deprecated_member_use
       child: WillPopScope(
         onWillPop: () async {
           final shouldPop = await showDialog<bool>(
@@ -120,15 +116,13 @@ class OrderDetailsPage extends StatelessWidget {
                 return const Text('Inspection Details');
               },
             ),
-            // The 'bottom' property of the AppBar is the perfect place for a TabBar.
             bottom: TabBar(
-              isScrollable: true, // Allows the tabs to scroll horizontally.
+              isScrollable: true,
               indicatorColor: AppColors.accent,
               labelStyle: AppTextStyles.button.copyWith(fontSize: 14),
               tabs: _sectionTitles.map((title) => Tab(text: title)).toList(),
             ),
           ),
-          // The body is now a TabBarView, which handles the swiping and content display.
           body: BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
             builder: (context, state) {
               if (state is OrderDetailsLoading ||
@@ -139,7 +133,6 @@ class OrderDetailsPage extends StatelessWidget {
                 return Center(child: Text(state.message));
               }
               if (state is OrderDetailsLoaded) {
-                // The TabBarView displays the content for the currently selected tab.
                 return const TabBarView(children: _sectionViews);
               }
               return const SizedBox.shrink();

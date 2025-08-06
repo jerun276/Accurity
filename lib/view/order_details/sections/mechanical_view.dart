@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constant/app_colors.dart';
 import '../../../core/constant/text_styles.dart';
-import '../../../core/widgets/checkbox_list_form_field.dart';
+import '../../../core/widgets/multi_select_dropdown_form_field.dart';
 import '../bloc/order_details_bloc.dart';
 
 class MechanicalView extends StatelessWidget {
@@ -27,27 +27,9 @@ class MechanicalView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                CheckboxListFormField(
+                MultiSelectDropdownFormField(
                   label: 'Heating Type',
-                  allOptions: const [
-                    'Forced Air',
-                    'Basedboard',
-                    'Boiler',
-                    'Radiant In-floor',
-                    'Radiator',
-                    'Hydronic',
-                    'Heat Pump',
-                    'Gas',
-                    'Electric',
-                    'Oil',
-                    'Geo Thermal',
-                    'X2',
-                    'X3',
-                    'HRV',
-                    'Central Air',
-                    'Humidifier',
-                    'Air Cleaner',
-                  ],
+                  category: 'HeatingType',
                   selectedOptions: order.heatingType,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'heatingType', value: val),
@@ -55,29 +37,9 @@ class MechanicalView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                CheckboxListFormField(
+                MultiSelectDropdownFormField(
                   label: 'Electrical Type',
-                  allOptions: const [
-                    '60',
-                    '100',
-                    '125',
-                    '150',
-                    '200',
-                    '300',
-                    '400',
-                    'Breaker',
-                    'Fuses',
-                    'X2',
-                    'X3',
-                    'X4',
-                    'X5',
-                    'Solar',
-                    'Backup Generator',
-                    'Secuirty',
-                    'Networked',
-                    'Intercom',
-                    'Video Surveilance',
-                  ],
+                  category: 'ElectricalType',
                   selectedOptions: order.electricalType,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'electricalType', value: val),
@@ -85,21 +47,9 @@ class MechanicalView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                CheckboxListFormField(
+                MultiSelectDropdownFormField(
                   label: 'Water Type',
-                  allOptions: const [
-                    'Tankless',
-                    '40',
-                    '50',
-                    '60',
-                    '80',
-                    '115',
-                    '151',
-                    '189',
-                    '227',
-                    'Gallons',
-                    'liters',
-                  ],
+                  category: 'WaterType',
                   selectedOptions: order.waterType,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'waterType', value: val),

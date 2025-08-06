@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constant/app_colors.dart';
 import '../../../core/constant/text_styles.dart';
 import '../../../core/widgets/app_text_form_field.dart';
-import '../../../core/widgets/checkbox_list_form_field.dart';
+import '../../../core/widgets/multi_select_dropdown_form_field.dart';
 import '../../../core/widgets/searchable_dropdown_form_field.dart';
 import '../bloc/order_details_bloc.dart';
 
@@ -48,18 +48,9 @@ class BasementView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                CheckboxListFormField(
+                MultiSelectDropdownFormField(
                   label: 'Foundation Type',
-                  allOptions: const [
-                    'Poured Concrete',
-                    'Block',
-                    'Stone',
-                    'Rubble',
-                    'Piles',
-                    'Wood',
-                    'Slab on Grade',
-                    'None',
-                  ],
+                  category: 'FoundationType',
                   selectedOptions: order.foundationType,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'foundationType', value: val),
@@ -75,64 +66,9 @@ class BasementView extends StatelessWidget {
                   ),
                 ),
 
-                CheckboxListFormField(
+                MultiSelectDropdownFormField(
                   label: 'Features',
-                  allOptions: const [
-                    '9 foot ceilings',
-                    'archways',
-                    'automated blinds',
-                    'barn doors',
-                    'built in cabinets',
-                    'built in esperesson machine',
-                    'built in shelving',
-                    'built-in microwave',
-                    'built-in oven',
-                    'built-in stove',
-                    'catherderal ceiling',
-                    'chair rails',
-                    'closet',
-                    'coffered ceiling',
-                    'concreate counter tops',
-                    'control 4',
-                    'cove ceiling',
-                    'crown molding',
-                    'custom window shutters',
-                    'decorative pillars',
-                    'double sided fireplace',
-                    'Electric fireplace',
-                    'exposed beams',
-                    'French doors',
-                    'gas fireplace',
-                    'glass cabinet doors',
-                    'glass walls',
-                    'heated floors',
-                    'heated towl racks',
-                    'integrated sound',
-                    'laundry shoot',
-                    'massage shower',
-                    'networked',
-                    'palladian window',
-                    'pocket doors',
-                    'pot lighting',
-                    'round corner beads',
-                    'self closing cabinets',
-                    'skylight',
-                    'solid core doors',
-                    'solid surface bathroom counter tops',
-                    'Solid surface kitchen and bathroom counter tops',
-                    'solid surface kitchen counter tops',
-                    'steam shower',
-                    'stone wall',
-                    'texured wall',
-                    'transom window',
-                    'tray ceiling',
-                    'vault ceiling',
-                    'wainscoting',
-                    'walk-in closet',
-                    'wall mounted faucets',
-                    'waterfall island',
-                    'wood fireplace',
-                  ],
+                  category: 'BasementFeatures',
                   selectedOptions: order.basementFeatures,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(
@@ -154,14 +90,9 @@ class BasementView extends StatelessWidget {
                   ),
                 ),
 
-                CheckboxListFormField(
+                MultiSelectDropdownFormField(
                   label: 'Ceiling Type',
-                  allOptions: const [
-                    'dry-wall',
-                    'Ceiling tiile',
-                    'T bar',
-                    'Plaster',
-                  ],
+                  category: 'BasementCeilingType',
                   selectedOptions: order.basementCeilingType,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(

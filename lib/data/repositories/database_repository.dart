@@ -53,7 +53,6 @@ class DatabaseRepository {
   }
 
   Future<void> _createTables(Database db) async {
-    // This SQL statement now matches your new Order model
     await db.execute('''
       CREATE TABLE $_ordersTable (
         localId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,7 +76,7 @@ class DatabaseRepository {
         configuration TEXT,
         topography TEXT,
         waterSupplyType TEXT,
-        streetscape TEXT NOT NULL, 
+        streetscape TEXT, -- Correctly a TEXT field now
         siteInfluence TEXT,
         siteImprovements TEXT,
         driveway TEXT,
@@ -87,30 +86,30 @@ class DatabaseRepository {
         propertyType TEXT,
         designStyle TEXT,
         construction TEXT,
-        sidingType TEXT NOT NULL, 
-        roofType TEXT NOT NULL, 
-        windowType TEXT NOT NULL, 
-        heatingType TEXT NOT NULL, 
-        electricalType TEXT NOT NULL, 
-        waterType TEXT NOT NULL, 
+        sidingType TEXT NOT NULL,
+        roofType TEXT NOT NULL,
+        windowType TEXT NOT NULL,
+        heatingType TEXT NOT NULL,
+        electricalType TEXT NOT NULL,
+        waterType TEXT NOT NULL,
         basementType TEXT,
         basementFinish TEXT,
-        foundationType TEXT NOT NULL, 
+        foundationType TEXT NOT NULL,
         basementRooms TEXT,
-        basementFeatures TEXT NOT NULL, 
+        basementFeatures TEXT NOT NULL,
         basementFlooring TEXT,
-        basementCeilingType TEXT NOT NULL, 
+        basementCeilingType TEXT NOT NULL,
         mainLevelRooms TEXT,
-        mainLevelFeatures TEXT NOT NULL, 
+        mainLevelFeatures TEXT NOT NULL,
         mainLevelFlooring TEXT,
         secondLevelRooms TEXT,
-        secondLevelFeatures TEXT NOT NULL, 
+        secondLevelFeatures TEXT NOT NULL,
         secondLevelFlooring TEXT,
         thirdLevelRooms TEXT,
-        thirdLevelFeatures TEXT NOT NULL, 
+        thirdLevelFeatures TEXT NOT NULL,
         thirdLevelFlooring TEXT,
         fourthLevelRooms TEXT,
-        fourthLevelFeatures TEXT NOT NULL, 
+        fourthLevelFeatures TEXT NOT NULL,
         fourthLevelFlooring TEXT,
         roofAge TEXT,
         windowAge TEXT,
@@ -126,7 +125,7 @@ class DatabaseRepository {
         ownerValue TEXT,
         purchasePrice TEXT,
         purchaseDate TEXT,
-        photoPaths TEXT NOT NULL 
+        photoPaths TEXT NOT NULL
       )
     ''');
 

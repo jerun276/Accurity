@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constant/app_colors.dart';
 import '../../../core/constant/text_styles.dart';
 import '../../../core/widgets/app_text_form_field.dart';
-import '../../../core/widgets/checkbox_list_form_field.dart';
 import '../../../core/widgets/searchable_dropdown_form_field.dart';
 import '../bloc/order_details_bloc.dart';
 
@@ -13,6 +12,9 @@ class SiteView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // This list defines the options for the ToggleButtons widget.
+    const waterSupplyOptions = ['Municipal', 'Well', 'Cistern', 'Dugout'];
+
     return BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
       buildWhen: (previous, current) => current is OrderDetailsLoaded,
       builder: (context, state) {
@@ -49,28 +51,51 @@ class SiteView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                SearchableDropdownFormField(
-                  label: 'Water Supply Type',
-                  value: order.waterSupplyType,
-                  category: 'WaterSupplyType',
-                  onChanged: (val) => context.read<OrderDetailsBloc>().add(
-                    OrderFieldChanged(fieldName: 'waterSupplyType', value: val),
+
+                // --- MODIFIED: Water Supply Type as Toggle Buttons ---
+                const Text(
+                  'Water Supply Type',
+                  style: AppTextStyles.fieldLabel,
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ToggleButtons(
+                    isSelected: waterSupplyOptions
+                        .map((option) => option == order.waterSupplyType)
+                        .toList(),
+                    onPressed: (int index) {
+                      context.read<OrderDetailsBloc>().add(
+                        OrderFieldChanged(
+                          fieldName: 'waterSupplyType',
+                          value: waterSupplyOptions[index],
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8.0),
+                    selectedColor: Colors.white,
+                    selectedBorderColor: AppColors.accent,
+                    fillColor: AppColors.accent,
+                    children: waterSupplyOptions
+                        .map(
+                          (option) => Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                            ),
+                            child: Text(option),
+                          ),
+                        )
+                        .toList(),
                   ),
                 ),
                 const SizedBox(height: 24),
 
-                // The Septic/Well Switch has been removed.
-                CheckboxListFormField(
+                // --- MODIFIED: Streetscape as a Searchable Dropdown ---
+                SearchableDropdownFormField(
                   label: 'Streetscape',
-                  allOptions: const [
-                    'Curbs',
-                    'Lights',
-                    'Sidewalks',
-                    'Overhead Wires',
-                    'Underground Wires',
-                    'Open Ditch',
-                  ],
-                  selectedOptions: order.streetscape,
+                  value: order.streetscape,
+                  category:
+                      'Streetscape', // This category already exists in your seed data
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'streetscape', value: val),
                   ),
@@ -109,7 +134,6 @@ class SiteView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                // --- NEWLY ADDED FIELDS ---
                 SearchableDropdownFormField(
                   label: 'Parking',
                   value: order.parking,

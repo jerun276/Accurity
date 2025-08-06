@@ -30,7 +30,7 @@ class Order {
   final String? configuration;
   final String? topography;
   final String? waterSupplyType;
-  final List<String> streetscape;
+  final String? streetscape;
   final String? siteInfluence;
   final String? siteImprovements;
   final String? driveway;
@@ -106,7 +106,7 @@ class Order {
     this.configuration,
     this.topography,
     this.waterSupplyType,
-    this.streetscape = const [],
+    this.streetscape,
     this.siteInfluence,
     this.siteImprovements,
     this.driveway,
@@ -189,7 +189,7 @@ class Order {
     String? configuration,
     String? topography,
     String? waterSupplyType,
-    List<String>? streetscape,
+    String? streetscape,
     String? siteInfluence,
     String? siteImprovements,
     String? driveway,
@@ -339,7 +339,7 @@ class Order {
       'configuration': configuration,
       'topography': topography,
       'waterSupplyType': waterSupplyType,
-      'streetscape': jsonEncode(streetscape),
+      'streetscape': streetscape,
       'siteInfluence': siteInfluence,
       'siteImprovements': siteImprovements,
       'driveway': driveway,
@@ -417,7 +417,7 @@ class Order {
       configuration: map['configuration'],
       topography: map['topography'],
       waterSupplyType: map['waterSupplyType'],
-      streetscape: List<String>.from(jsonDecode(map['streetscape'])),
+      streetscape: map['streetscape'],
       siteInfluence: map['siteInfluence'],
       siteImprovements: map['siteImprovements'],
       driveway: map['driveway'],

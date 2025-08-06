@@ -5,6 +5,7 @@ import '../../core/constant/app_colors.dart';
 import '../../core/constant/text_styles.dart';
 import '../../data/models/order.model.dart';
 import '../../data/repositories/order_repository.dart';
+import '../login/login_view.dart';
 import '../order_details/order_details_view.dart';
 import 'bloc/order_list_bloc.dart';
 
@@ -14,57 +15,58 @@ class OrderListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) =>
-          OrderListBloc(
-            orderRepository: RepositoryProvider.of<OrderRepository>(context),
-          )..add(
-            FetchAllOrders(),
-          ), // Immediately fetch orders when the screen is created
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('My Inspections'),
-          backgroundColor: AppColors.primary,
-          actions: [
-            // Logout button
-            IconButton(
-              icon: const Icon(Icons.logout),
-              onPressed: () {
-                // TODO: Navigate back to Login screen
-              },
+      create: (context) => OrderListBloc(
+        orderRepository: RepositoryProvider.of<OrderRepository>(context),
+      )..add(FetchAllOrders()),
+      child: const OrderListPage(),
+    );
+  }
+}
+
+class OrderListPage extends StatelessWidget {
+  const OrderListPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('My Inspections'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const LoginView()),
+                (route) => false,
+              );
+            },
+          ),
+        ],
+      ),
+      body: const OrderListContent(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final repo = RepositoryProvider.of<OrderRepository>(context);
+          final newOrder = await repo.saveOrder(
+            Order(
+              firmFileNumber: 'NEW-${DateTime.now().millisecond}',
+              address: 'New Inspection Address',
             ),
-          ],
-        ),
-        body: const OrderListContent(),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            // --- CREATE A NEW FAKE ORDER ---
-            final repo = RepositoryProvider.of<OrderRepository>(context);
-            // Create a new blank order and save it to get a localId
-            final newOrder = await repo.saveOrder(
-              Order(
-                firmFileNumber: 'NEW-${DateTime.now().second}',
-                address: 'New Inspection Address',
+          );
+
+          if (context.mounted && newOrder.localId != null) {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    OrderDetailsView(localOrderId: newOrder.localId!),
               ),
             );
-
-            // Navigate to the details page for the newly created order
-            if (context.mounted && newOrder.localId != null) {
-              Navigator.of(context)
-                  .push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          OrderDetailsView(localOrderId: newOrder.localId!),
-                    ),
-                  )
-                  .then((_) {
-                    // After returning from details, refresh the list
-                    context.read<OrderListBloc>().add(FetchAllOrders());
-                  });
-            }
-          },
-          backgroundColor: AppColors.accent,
-          child: const Icon(Icons.add),
-        ),
+            // ignore: use_build_context_synchronously
+            context.read<OrderListBloc>().add(FetchAllOrders());
+          }
+        },
+        backgroundColor: AppColors.accent,
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -95,7 +97,6 @@ class OrderListContent extends StatelessWidget {
               ),
             );
           }
-          // Display the list of orders
           return RefreshIndicator(
             onRefresh: () async {
               context.read<OrderListBloc>().add(FetchAllOrders());
@@ -125,19 +126,15 @@ class OrderListContent extends StatelessWidget {
                       Icons.arrow_forward_ios,
                       color: AppColors.mediumGrey,
                     ),
-                    onTap: () {
-                      // Navigate to details page and refresh list when returning
-                      Navigator.of(context)
-                          .push(
-                            MaterialPageRoute(
-                              builder: (_) => OrderDetailsView(
-                                localOrderId: order.localId!,
-                              ),
-                            ),
-                          )
-                          .then((_) {
-                            context.read<OrderListBloc>().add(FetchAllOrders());
-                          });
+                    onTap: () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              OrderDetailsView(localOrderId: order.localId!),
+                        ),
+                      );
+                      // ignore: use_build_context_synchronously
+                      context.read<OrderListBloc>().add(FetchAllOrders());
                     },
                   ),
                 );
@@ -145,7 +142,7 @@ class OrderListContent extends StatelessWidget {
             ),
           );
         }
-        return const SizedBox.shrink(); // For initial state
+        return const SizedBox.shrink();
       },
     );
   }

@@ -1,3 +1,4 @@
+// ignore: depend_on_referenced_packages
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:image_picker/image_picker.dart';
@@ -95,7 +96,6 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
         return order.copyWith(serviceType: value);
       case 'loanType':
         return order.copyWith(loanType: value);
-      // ADDED: New contact fields
       case 'contactName':
         return order.copyWith(contactName: value);
       case 'contactEmail':
@@ -110,7 +110,6 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
         return order.copyWith(natureOfDistrict: value);
       case 'developmentType':
         return order.copyWith(developmentType: value);
-      // REMOVED: isGatedCommunity case is deleted
 
       // --- Site ---
       case 'configuration':
@@ -119,9 +118,8 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
         return order.copyWith(topography: value);
       case 'waterSupplyType':
         return order.copyWith(waterSupplyType: value);
-      // REMOVED: isSepticWell case is deleted
       case 'streetscape':
-        return order.copyWith(streetscape: value as List<String>);
+        return order.copyWith(streetscape: value); 
       case 'siteInfluence':
         return order.copyWith(siteInfluence: value);
       case 'siteImprovements':
@@ -234,6 +232,7 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
         return order.copyWith(purchaseDate: value);
 
       default:
+        print('Warning: Unhandled field name in OrderDetailsBloc: $fieldName');
         return order;
     }
   }

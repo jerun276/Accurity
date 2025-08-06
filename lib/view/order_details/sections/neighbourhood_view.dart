@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constant/app_colors.dart';
 import '../../../core/constant/text_styles.dart';
-import '../../../core/widgets/searchable_dropdown_form_field.dart'; // Import new widget
+import '../../../core/widgets/searchable_dropdown_form_field.dart';
 import '../bloc/order_details_bloc.dart';
 
 class NeighbourhoodView extends StatelessWidget {
@@ -30,58 +30,33 @@ class NeighbourhoodView extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // --- Nature of District: Searchable Dropdown ---
+                  // --- Nature of District ---
                   SearchableDropdownFormField(
                     label: 'Nature of District',
                     value: order.natureOfDistrict,
-                    category:
-                        'NatureOfDistrict', // This MUST match the category in the DB
-                    onChanged: (value) {
-                      context.read<OrderDetailsBloc>().add(
-                        OrderFieldChanged(
-                          fieldName: 'natureOfDistrict',
-                          value: value,
-                        ),
-                      );
-                    },
+                    category: 'NatureOfDistrict',
+                    onChanged: (value) => context.read<OrderDetailsBloc>().add(
+                      OrderFieldChanged(
+                        fieldName: 'natureOfDistrict',
+                        value: value,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
 
-                  // --- Development Type: Searchable Dropdown ---
+                  // --- Development Type ---
                   SearchableDropdownFormField(
                     label: 'Development Type',
                     value: order.developmentType,
-                    category:
-                        'DevelopmentType', // This MUST match the category in the DB
-                    onChanged: (value) {
-                      context.read<OrderDetailsBloc>().add(
-                        OrderFieldChanged(
-                          fieldName: 'developmentType',
-                          value: value,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // --- Gated Community: Switch ---
-                  SwitchListTile(
-                    title: const Text(
-                      'Gated Community',
-                      style: AppTextStyles.fieldLabel,
+                    category: 'DevelopmentType',
+                    onChanged: (value) => context.read<OrderDetailsBloc>().add(
+                      OrderFieldChanged(
+                        fieldName: 'developmentType',
+                        value: value,
+                      ),
                     ),
-                    value: order.isGatedCommunity,
-                    activeColor: AppColors.accent,
-                    onChanged: (value) {
-                      context.read<OrderDetailsBloc>().add(
-                        OrderFieldChanged(
-                          fieldName: 'isGatedCommunity',
-                          value: value,
-                        ),
-                      );
-                    },
-                    contentPadding: EdgeInsets.zero,
                   ),
+                  // The Gated Community Switch has been removed.
                 ],
               ),
             ),

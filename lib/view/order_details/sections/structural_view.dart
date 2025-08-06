@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constant/app_colors.dart';
 import '../../../core/constant/text_styles.dart';
-import '../../../core/widgets/app_text_form_field.dart';
+import '../../../core/widgets/checkbox_list_form_field.dart';
+import '../../../core/widgets/searchable_dropdown_form_field.dart';
 import '../bloc/order_details_bloc.dart';
 
 class StructuralView extends StatelessWidget {
@@ -43,68 +44,77 @@ class StructuralView extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // TODO: Replace with a real Dropdown/Searchable widget fetching from DB
-                AppTextFormField(
+                SearchableDropdownFormField(
                   label: 'Property Type',
-                  initialValue: order.propertyType,
+                  value: order.propertyType,
+                  category: 'PropertyType',
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'propertyType', value: val),
                   ),
                 ),
-                AppTextFormField(
+                const SizedBox(height: 24),
+                SearchableDropdownFormField(
                   label: 'Design Style',
-                  initialValue: order.designStyle,
+                  value: order.designStyle,
+                  category: 'DesignStyle',
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'designStyle', value: val),
                   ),
                 ),
-                AppTextFormField(
+                const SizedBox(height: 24),
+                SearchableDropdownFormField(
                   label: 'Construction',
-                  initialValue: order.construction,
+                  value: order.construction,
+                  category: 'Construction',
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'construction', value: val),
                   ),
                 ),
-                AppTextFormField(
+                const SizedBox(height: 24),
+
+                CheckboxListFormField(
                   label: 'Siding Type',
-                  initialValue: order.sidingType,
+                  allOptions: const [
+                    'Brick',
+                    'stone',
+                    'siding',
+                    'stucco',
+                  ], // From your seed data
+                  selectedOptions: order.sidingType,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'sidingType', value: val),
                   ),
                 ),
-                AppTextFormField(
+                const SizedBox(height: 24),
+
+                CheckboxListFormField(
                   label: 'Roof Type',
-                  initialValue: order.roofType,
+                  allOptions: const [
+                    'Asphalt Shingle',
+                    'Metal',
+                    'Membrane',
+                    'Tar & Gravel',
+                    'Clay Tile',
+                  ], // From your seed data
+                  selectedOptions: order.roofType,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'roofType', value: val),
                   ),
                 ),
-                AppTextFormField(
+                const SizedBox(height: 24),
+
+                CheckboxListFormField(
                   label: 'Window Type',
-                  initialValue: order.windowType,
+                  allOptions: const [
+                    'Vinyl',
+                    'Wood',
+                    'Aluminium',
+                    'Aluminium Clad Vinyl',
+                    'Aluminium Clad Wood',
+                  ], // From your seed data
+                  selectedOptions: order.windowType,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'windowType', value: val),
-                  ),
-                ),
-                AppTextFormField(
-                  label: 'Parking',
-                  initialValue: order.parking,
-                  onChanged: (val) => context.read<OrderDetailsBloc>().add(
-                    OrderFieldChanged(fieldName: 'parking', value: val),
-                  ),
-                ),
-                AppTextFormField(
-                  label: 'Garage',
-                  initialValue: order.garage,
-                  onChanged: (val) => context.read<OrderDetailsBloc>().add(
-                    OrderFieldChanged(fieldName: 'garage', value: val),
-                  ),
-                ),
-                AppTextFormField(
-                  label: 'Occupancy',
-                  initialValue: order.occupancy,
-                  onChanged: (val) => context.read<OrderDetailsBloc>().add(
-                    OrderFieldChanged(fieldName: 'occupancy', value: val),
                   ),
                 ),
               ],

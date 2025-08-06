@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constant/app_colors.dart';
 import '../../../core/constant/text_styles.dart';
 import '../../../core/widgets/app_text_form_field.dart';
+import '../../../core/widgets/checkbox_list_form_field.dart';
+import '../../../core/widgets/searchable_dropdown_form_field.dart';
 import '../bloc/order_details_bloc.dart';
 
 class BasementView extends StatelessWidget {
@@ -27,27 +29,44 @@ class BasementView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
 
-                AppTextFormField(
+                SearchableDropdownFormField(
                   label: 'Basement Type',
-                  initialValue: order.basementType,
+                  value: order.basementType,
+                  category: 'BasementType',
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'basementType', value: val),
                   ),
                 ),
-                AppTextFormField(
+                const SizedBox(height: 24),
+                SearchableDropdownFormField(
                   label: 'Basement Finish',
-                  initialValue: order.basementFinish,
+                  value: order.basementFinish,
+                  category: 'BasementFinish',
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'basementFinish', value: val),
                   ),
                 ),
-                AppTextFormField(
+                const SizedBox(height: 24),
+
+                CheckboxListFormField(
                   label: 'Foundation Type',
-                  initialValue: order.foundationType,
+                  allOptions: const [
+                    'Poured Concrete',
+                    'Block',
+                    'Stone',
+                    'Rubble',
+                    'Piles',
+                    'Wood',
+                    'Slab on Grade',
+                    'None',
+                  ],
+                  selectedOptions: order.foundationType,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(fieldName: 'foundationType', value: val),
                   ),
                 ),
+                const SizedBox(height: 24),
+
                 AppTextFormField(
                   label: 'Rooms',
                   initialValue: order.basementRooms,
@@ -55,9 +74,66 @@ class BasementView extends StatelessWidget {
                     OrderFieldChanged(fieldName: 'basementRooms', value: val),
                   ),
                 ),
-                AppTextFormField(
+
+                CheckboxListFormField(
                   label: 'Features',
-                  initialValue: order.basementFeatures,
+                  allOptions: const [
+                    '9 foot ceilings',
+                    'archways',
+                    'automated blinds',
+                    'barn doors',
+                    'built in cabinets',
+                    'built in esperesson machine',
+                    'built in shelving',
+                    'built-in microwave',
+                    'built-in oven',
+                    'built-in stove',
+                    'catherderal ceiling',
+                    'chair rails',
+                    'closet',
+                    'coffered ceiling',
+                    'concreate counter tops',
+                    'control 4',
+                    'cove ceiling',
+                    'crown molding',
+                    'custom window shutters',
+                    'decorative pillars',
+                    'double sided fireplace',
+                    'Electric fireplace',
+                    'exposed beams',
+                    'French doors',
+                    'gas fireplace',
+                    'glass cabinet doors',
+                    'glass walls',
+                    'heated floors',
+                    'heated towl racks',
+                    'integrated sound',
+                    'laundry shoot',
+                    'massage shower',
+                    'networked',
+                    'palladian window',
+                    'pocket doors',
+                    'pot lighting',
+                    'round corner beads',
+                    'self closing cabinets',
+                    'skylight',
+                    'solid core doors',
+                    'solid surface bathroom counter tops',
+                    'Solid surface kitchen and bathroom counter tops',
+                    'solid surface kitchen counter tops',
+                    'steam shower',
+                    'stone wall',
+                    'texured wall',
+                    'transom window',
+                    'tray ceiling',
+                    'vault ceiling',
+                    'wainscoting',
+                    'walk-in closet',
+                    'wall mounted faucets',
+                    'waterfall island',
+                    'wood fireplace',
+                  ],
+                  selectedOptions: order.basementFeatures,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(
                       fieldName: 'basementFeatures',
@@ -65,6 +141,8 @@ class BasementView extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 24),
+
                 AppTextFormField(
                   label: 'Flooring',
                   initialValue: order.basementFlooring,
@@ -75,9 +153,16 @@ class BasementView extends StatelessWidget {
                     ),
                   ),
                 ),
-                AppTextFormField(
+
+                CheckboxListFormField(
                   label: 'Ceiling Type',
-                  initialValue: order.basementCeilingType,
+                  allOptions: const [
+                    'dry-wall',
+                    'Ceiling tiile',
+                    'T bar',
+                    'Plaster',
+                  ],
+                  selectedOptions: order.basementCeilingType,
                   onChanged: (val) => context.read<OrderDetailsBloc>().add(
                     OrderFieldChanged(
                       fieldName: 'basementCeilingType',

@@ -1,9 +1,8 @@
-// ignore: depend_on_referenced_packages
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../core/services/photo_service.dart'; 
+import '../../../core/services/photo_service.dart';
 import '../../../data/models/order.model.dart';
 import '../../../data/repositories/order_repository.dart';
 
@@ -12,17 +11,17 @@ part 'order_details_state.dart';
 
 class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
   final OrderRepository _orderRepository;
-  final PhotoService _photoService; // Add PhotoService
+  final PhotoService _photoService;
 
   OrderDetailsBloc({
     required OrderRepository orderRepository,
-    required PhotoService photoService, // Inject PhotoService
+    required PhotoService photoService,
   }) : _orderRepository = orderRepository,
        _photoService = photoService,
        super(OrderDetailsInitial()) {
     on<LoadOrderDetails>(_onLoadOrderDetails);
     on<OrderFieldChanged>(_onFormFieldChanged);
-    on<AddPhotoRequested>(_onAddPhotoRequested); // Add handler
+    on<AddPhotoRequested>(_onAddPhotoRequested);
   }
 
   Future<void> _onLoadOrderDetails(
@@ -74,10 +73,10 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
     }
   }
 
+  /// This helper function is now fully synced with the latest Order model.
   Order _mapFieldChangeToOrder(Order order, String fieldName, dynamic value) {
-    // This switch is now complete based on your Order model.
     switch (fieldName) {
-      // Order Details
+      // --- Order Details ---
       case 'clientFileNumber':
         return order.copyWith(clientFileNumber: value);
       case 'firmFileNumber':
@@ -96,31 +95,45 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
         return order.copyWith(serviceType: value);
       case 'loanType':
         return order.copyWith(loanType: value);
-      // Neighbourhood
+      // ADDED: New contact fields
+      case 'contactName':
+        return order.copyWith(contactName: value);
+      case 'contactEmail':
+        return order.copyWith(contactEmail: value);
+      case 'contactPhone1':
+        return order.copyWith(contactPhone1: value);
+      case 'contactPhone2':
+        return order.copyWith(contactPhone2: value);
+
+      // --- Neighbourhood ---
       case 'natureOfDistrict':
         return order.copyWith(natureOfDistrict: value);
       case 'developmentType':
         return order.copyWith(developmentType: value);
-      case 'isGatedCommunity':
-        return order.copyWith(isGatedCommunity: value);
-      // Site
+      // REMOVED: isGatedCommunity case is deleted
+
+      // --- Site ---
       case 'configuration':
         return order.copyWith(configuration: value);
       case 'topography':
         return order.copyWith(topography: value);
       case 'waterSupplyType':
         return order.copyWith(waterSupplyType: value);
-      case 'isSepticWell':
-        return order.copyWith(isSepticWell: value);
+      // REMOVED: isSepticWell case is deleted
       case 'streetscape':
-        return order.copyWith(streetscape: value);
+        return order.copyWith(streetscape: value as List<String>);
       case 'siteInfluence':
         return order.copyWith(siteInfluence: value);
       case 'siteImprovements':
         return order.copyWith(siteImprovements: value);
       case 'driveway':
         return order.copyWith(driveway: value);
-      // Structural Details
+      case 'parking':
+        return order.copyWith(parking: value);
+      case 'occupancy':
+        return order.copyWith(occupancy: value);
+
+      // --- Structural Details ---
       case 'builtInPast10Years':
         return order.copyWith(builtInPast10Years: value);
       case 'propertyType':
@@ -130,65 +143,63 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
       case 'construction':
         return order.copyWith(construction: value);
       case 'sidingType':
-        return order.copyWith(sidingType: value);
+        return order.copyWith(sidingType: value as List<String>);
       case 'roofType':
-        return order.copyWith(roofType: value);
+        return order.copyWith(roofType: value as List<String>);
       case 'windowType':
-        return order.copyWith(windowType: value);
-      case 'parking':
-        return order.copyWith(parking: value);
-      case 'garage':
-        return order.copyWith(garage: value);
-      case 'occupancy':
-        return order.copyWith(occupancy: value);
-      // Mechanical
+        return order.copyWith(windowType: value as List<String>);
+
+      // --- Mechanical ---
       case 'heatingType':
-        return order.copyWith(heatingType: value);
+        return order.copyWith(heatingType: value as List<String>);
       case 'electricalType':
-        return order.copyWith(electricalType: value);
+        return order.copyWith(electricalType: value as List<String>);
       case 'waterType':
-        return order.copyWith(waterType: value);
-      // Basement
+        return order.copyWith(waterType: value as List<String>);
+
+      // --- Basement ---
       case 'basementType':
         return order.copyWith(basementType: value);
       case 'basementFinish':
         return order.copyWith(basementFinish: value);
       case 'foundationType':
-        return order.copyWith(foundationType: value);
+        return order.copyWith(foundationType: value as List<String>);
       case 'basementRooms':
         return order.copyWith(basementRooms: value);
       case 'basementFeatures':
-        return order.copyWith(basementFeatures: value);
+        return order.copyWith(basementFeatures: value as List<String>);
       case 'basementFlooring':
         return order.copyWith(basementFlooring: value);
       case 'basementCeilingType':
-        return order.copyWith(basementCeilingType: value);
-      // Levels
+        return order.copyWith(basementCeilingType: value as List<String>);
+
+      // --- Level Details ---
       case 'mainLevelRooms':
         return order.copyWith(mainLevelRooms: value);
       case 'mainLevelFeatures':
-        return order.copyWith(mainLevelFeatures: value);
+        return order.copyWith(mainLevelFeatures: value as List<String>);
       case 'mainLevelFlooring':
         return order.copyWith(mainLevelFlooring: value);
       case 'secondLevelRooms':
         return order.copyWith(secondLevelRooms: value);
       case 'secondLevelFeatures':
-        return order.copyWith(secondLevelFeatures: value);
+        return order.copyWith(secondLevelFeatures: value as List<String>);
       case 'secondLevelFlooring':
         return order.copyWith(secondLevelFlooring: value);
       case 'thirdLevelRooms':
         return order.copyWith(thirdLevelRooms: value);
       case 'thirdLevelFeatures':
-        return order.copyWith(thirdLevelFeatures: value);
+        return order.copyWith(thirdLevelFeatures: value as List<String>);
       case 'thirdLevelFlooring':
         return order.copyWith(thirdLevelFlooring: value);
       case 'fourthLevelRooms':
         return order.copyWith(fourthLevelRooms: value);
       case 'fourthLevelFeatures':
-        return order.copyWith(fourthLevelFeatures: value);
+        return order.copyWith(fourthLevelFeatures: value as List<String>);
       case 'fourthLevelFlooring':
         return order.copyWith(fourthLevelFlooring: value);
-      // Component Age
+
+      // --- Component Age ---
       case 'roofAge':
         return order.copyWith(roofAge: value);
       case 'windowAge':
@@ -199,7 +210,8 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
         return order.copyWith(kitchenAge: value);
       case 'bathAge':
         return order.copyWith(bathAge: value);
-      // Notes
+
+      // --- Notes ---
       case 'roofNotes':
         return order.copyWith(roofNotes: value);
       case 'windowNotes':
@@ -210,7 +222,8 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
         return order.copyWith(bathNotes: value);
       case 'furnaceNotes':
         return order.copyWith(furnaceNotes: value);
-      // Value Indicators
+
+      // --- Value Indicators ---
       case 'bankValue':
         return order.copyWith(bankValue: value);
       case 'ownerValue':
@@ -221,7 +234,6 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
         return order.copyWith(purchaseDate: value);
 
       default:
-        print('Warning: Unhandled field name in OrderDetailsBloc: $fieldName');
         return order;
     }
   }

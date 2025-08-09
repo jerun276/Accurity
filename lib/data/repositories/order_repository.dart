@@ -1,16 +1,23 @@
+import 'dart:async';
+import '../../core/services/sync_service.dart';
 import '../models/order.model.dart';
 import '../models/sync_status.enum.dart';
 import 'database_repository.dart';
 
-/// The single source of truth for all order-related data in the app.
-///
-/// This repository abstracts the underlying data source (currently SQLite)
-/// from the rest of the application. The BLoCs interact with this class,
-
 class OrderRepository {
   final DatabaseRepository _db;
 
-  OrderRepository(this._db);
+  // CHANGED: Instead of a direct instance, this is now a function
+  // that knows how to get the SyncService instance. This breaks the
+  // circular dependency during initialization.
+  final SyncService Function() _getSyncService;
+
+  // This is a private getter that executes the function to resolve the
+  // SyncService instance only when it's actually needed.
+  SyncService get _syncService => _getSyncService();
+
+  // The constructor is updated to accept the function.
+  OrderRepository(this._db, this._getSyncService);
 
   /// Retrieves a single order by its local ID.
   Future<Order> getOrder(int localId) async {
@@ -22,31 +29,37 @@ class OrderRepository {
     return _db.getAllOrders();
   }
 
-  /// Saves an order and intelligently sets its sync status.
-  ///
-  /// This is a critical piece of the offline-first logic.
+  /// Saves an order, intelligently sets its sync status, and triggers a sync.
   Future<Order> saveOrder(Order order) async {
     SyncStatus newStatus;
 
-    // If the record was already synced and is now being edited, it needs an update.
     if (order.syncStatus == SyncStatus.synced) {
       newStatus = SyncStatus.needsUpdate;
     } else {
-      // If it was created offline (localOnly) or already needed an update,
-      // its status remains unchanged until it is successfully synced.
       newStatus = order.syncStatus;
     }
 
     final orderToSave = order.copyWith(syncStatus: newStatus);
+    final savedOrder = await _db.saveOrder(orderToSave);
 
-    return _db.saveOrder(orderToSave);
+    // This now works perfectly. When this line is called, the `_syncService`
+    // getter executes the function provided by main.dart, returning the
+    // fully initialized SyncService instance.
+    unawaited(_syncService.syncUnsyncedOrders());
+
+    return savedOrder;
   }
 
-  /// For the future SyncService to find records to push to Supabase.
+  /// Retrieves all orders that need to be pushed to the cloud.
   Future<List<Order>> getUnsyncedOrders() async {
     return _db.getOrdersWithStatus([
       SyncStatus.localOnly,
       SyncStatus.needsUpdate,
     ]);
+  }
+
+  /// Updates an existing order in the local database. Used by the SyncService.
+  Future<void> updateLocalOrder(Order order) async {
+    return _db.updateLocalOrder(order);
   }
 }

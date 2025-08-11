@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:path/path.dart' as p;
@@ -5,6 +6,7 @@ import 'package:path/path.dart' as p;
 import '../../data/models/order.model.dart';
 import '../../data/models/sync_status.enum.dart';
 import '../../data/repositories/order_repository.dart';
+import 'package:accurity/data/models/sync_state.enum.dart';
 import 'supabase_auth_service.dart';
 import 'supabase_service.dart';
 import 'supabase_storage_service.dart';
@@ -15,6 +17,9 @@ class SyncService {
   final SupabaseStorageService _supabaseStorageService;
   final SupabaseAuthService _authService;
   final Connectivity _connectivity;
+
+  final _syncStateController = StreamController<SyncState>.broadcast();
+  Stream<SyncState> get syncStateStream => _syncStateController.stream;
 
   SyncService({
     required OrderRepository orderRepository,
@@ -28,14 +33,19 @@ class SyncService {
        _authService = authService,
        _connectivity = connectivity;
 
+  void dispose() {
+    _syncStateController.close();
+  }
+
   /// Checks for unsynced orders and pushes them to Supabase if online.
   Future<void> syncUnsyncedOrders() async {
-    print('[SyncService] Starting sync process...');
+    _syncStateController.add(SyncState.syncing);
 
     // 1. Check for internet connection.
     final connectivityResult = await _connectivity.checkConnectivity();
     if (connectivityResult == ConnectivityResult.none) {
       print('[SyncService] No internet connection. Sync aborted.');
+      _syncStateController.add(SyncState.failure);
       return;
     }
 
@@ -43,6 +53,7 @@ class SyncService {
     final currentUserId = _authService.currentUser?.id;
     if (currentUserId == null) {
       print('[SyncService] No authenticated user found. Cannot sync.');
+      _syncStateController.add(SyncState.failure);
       return;
     }
 
@@ -50,24 +61,21 @@ class SyncService {
     final unsyncedOrders = await _orderRepository.getUnsyncedOrders();
     if (unsyncedOrders.isEmpty) {
       print('[SyncService] No unsynced orders to process.');
+      _syncStateController.add(SyncState.idle);
       return;
     }
 
     print('[SyncService] Found ${unsyncedOrders.length} orders to sync.');
+    bool allSyncsSuccessful = true;
 
     // 4. Loop through each unsynced order and process it.
     for (var order in unsyncedOrders) {
       try {
-        // --- THE CRITICAL LOGIC ---
-        // If the order is new (localOnly), we inject the current user's ID into it.
         if (order.syncStatus == SyncStatus.localOnly) {
           order = order.copyWith(userId: currentUserId);
         }
-
-        // First, handle uploading any local photos and get their public URLs.
         final orderWithCloudPhotos = await _uploadOrderPhotos(order);
 
-        // Now, sync the order data itself, which now contains the user_id and photo URLs.
         if (orderWithCloudPhotos.syncStatus == SyncStatus.localOnly) {
           final newSupabaseId = await _supabaseService.createOrder(
             orderWithCloudPhotos,
@@ -78,28 +86,33 @@ class SyncService {
               syncStatus: SyncStatus.synced,
             );
             await _orderRepository.updateLocalOrder(updatedOrder);
-            print(
-              '[SyncService] Successfully synced NEW order with localId: ${order.localId}',
-            );
           }
         } else if (orderWithCloudPhotos.syncStatus == SyncStatus.needsUpdate) {
-          // For updates, we don't change the user_id, as the original creator should be preserved.
           await _supabaseService.updateOrder(orderWithCloudPhotos);
           final updatedOrder = orderWithCloudPhotos.copyWith(
             syncStatus: SyncStatus.synced,
           );
           await _orderRepository.updateLocalOrder(updatedOrder);
-          print(
-            '[SyncService] Successfully synced UPDATED order with localId: ${order.localId}',
-          );
         }
       } catch (e) {
+        allSyncsSuccessful = false; 
         print(
           '[SyncService] ERROR syncing order with localId: ${order.localId}. Error: $e',
         );
-        // Continue to the next order even if one fails.
       }
     }
+
+    // 2. Announce the final result.
+    if (allSyncsSuccessful) {
+      _syncStateController.add(SyncState.success);
+    } else {
+      _syncStateController.add(SyncState.failure);
+    }
+
+    // After a short delay, return to idle state
+    await Future.delayed(const Duration(seconds: 3));
+    _syncStateController.add(SyncState.idle);
+
     print('[SyncService] Sync process finished.');
   }
 

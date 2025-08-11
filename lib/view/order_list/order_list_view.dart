@@ -8,6 +8,8 @@ import '../../data/models/order.model.dart';
 import '../../data/repositories/order_repository.dart';
 import '../order_details/order_details_view.dart';
 import 'bloc/order_list_bloc.dart';
+import '../../core/widgets/sync_status_indicator.dart'; // Import the new widget
+
 
 class OrderListView extends StatelessWidget {
   const OrderListView({super.key});
@@ -34,6 +36,7 @@ class OrderListPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('My Inspections'),
         actions: [
+          const SyncStatusIndicator(), 
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {

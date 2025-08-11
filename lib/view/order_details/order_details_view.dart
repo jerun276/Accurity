@@ -5,6 +5,7 @@ import '../../../core/constant/app_colors.dart';
 import '../../../core/constant/text_styles.dart';
 import '../../../core/services/photo_service.dart';
 import '../../../data/repositories/order_repository.dart';
+import '../../../core/widgets/sync_status_indicator.dart';
 import 'bloc/order_details_bloc.dart';
 import 'sections/basement_view.dart';
 import 'sections/component_age_view.dart';
@@ -90,6 +91,7 @@ class OrderDetailsPage extends StatelessWidget {
                 'All changes have been saved automatically. Do you want to go back to the order list?',
               ),
               actions: [
+                SyncStatusIndicator(),
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
                   child: const Text('Stay'),

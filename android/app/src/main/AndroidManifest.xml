@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.INTERNET" />
   <!-- These are the only permissions your app needs -->
   <uses-permission android:name="android.permission.CAMERA" />
   <!-- For modern Android 13+ devices -->

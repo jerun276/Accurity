@@ -23,6 +23,7 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
     on<LoadOrderDetails>(_onLoadOrderDetails);
     on<OrderFieldChanged>(_onFormFieldChanged);
     on<AddPhotoRequested>(_onAddPhotoRequested);
+    on<SketchSaved>(_onSketchSaved);
   }
 
   Future<void> _onLoadOrderDetails(
@@ -119,7 +120,7 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
       case 'waterSupplyType':
         return order.copyWith(waterSupplyType: value);
       case 'streetscape':
-        return order.copyWith(streetscape: value); 
+        return order.copyWith(streetscape: value);
       case 'siteInfluence':
         return order.copyWith(siteInfluence: value);
       case 'siteImprovements':
@@ -234,6 +235,28 @@ class OrderDetailsBloc extends Bloc<OrderDetailsEvent, OrderDetailsState> {
       default:
         print('Warning: Unhandled field name in OrderDetailsBloc: $fieldName');
         return order;
+    }
+  }
+
+  Future<void> _onSketchSaved(
+    SketchSaved event,
+    Emitter<OrderDetailsState> emit,
+  ) async {
+    if (state is OrderDetailsLoaded) {
+      final currentOrder = (state as OrderDetailsLoaded).order;
+
+      // This logic is identical to adding a regular photo.
+      final updatedPhotoList = List<String>.from(currentOrder.photoPaths)
+        ..add(event.filePath);
+
+      final updatedOrder = currentOrder.copyWith(photoPaths: updatedPhotoList);
+
+      // Emit the new state to update the order object.
+      emit(OrderDetailsLoaded(updatedOrder));
+
+      // Automatically save the updated order to the local database.
+      // The SyncService will find this new local path and upload it automatically.
+      await _orderRepository.saveOrder(updatedOrder);
     }
   }
 }

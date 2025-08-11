@@ -1,7 +1,5 @@
 part of 'order_details_bloc.dart';
 
-
-
 sealed class OrderDetailsEvent extends Equatable {
   const OrderDetailsEvent();
   @override
@@ -35,4 +33,12 @@ class AddPhotoRequested extends OrderDetailsEvent {
 
   @override
   List<Object?> get props => [source];
+}
+
+class SketchSaved extends OrderDetailsEvent {
+  final String filePath;
+  const SketchSaved({required this.filePath});
+
+  @override
+  List<Object?> get props => [filePath];
 }

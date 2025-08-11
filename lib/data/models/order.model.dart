@@ -6,8 +6,9 @@ class Order {
   final int? localId;
   final String? supabaseId;
   final SyncStatus syncStatus;
+  final String? userId;
 
-  // --- ORDER DETAILS (NEW FIELDS ADDED) ---
+  // --- ORDER DETAILS ---
   final String? clientFileNumber;
   final String? firmFileNumber;
   final String? address;
@@ -37,7 +38,7 @@ class Order {
   final String? parking;
   final String? occupancy;
 
-  // --- STRUCTURAL DETAILS (TYPES CHANGED) ---
+  // --- STRUCTURAL DETAILS ---
   final bool builtInPast10Years;
   final String? propertyType;
   final String? designStyle;
@@ -46,12 +47,12 @@ class Order {
   final List<String> roofType;
   final List<String> windowType;
 
-  // --- MECHANICAL (TYPES CHANGED) ---
+  // --- MECHANICAL ---
   final List<String> heatingType;
   final List<String> electricalType;
   final List<String> waterType;
 
-  // --- BASEMENT (TYPES CHANGED) ---
+  // --- BASEMENT ---
   final String? basementType;
   final String? basementFinish;
   final List<String> foundationType;
@@ -60,7 +61,7 @@ class Order {
   final String? basementFlooring;
   final List<String> basementCeilingType;
 
-  // --- LEVEL DETAILS (TYPES CHANGED) ---
+  // --- LEVEL DETAILS ---
   final String? mainLevelRooms;
   final List<String> mainLevelFeatures;
   final String? mainLevelFlooring;
@@ -74,18 +75,23 @@ class Order {
   final List<String> fourthLevelFeatures;
   final String? fourthLevelFlooring;
 
-  // --- Other fields are unchanged ---
+  // --- COMPONENT AGE ---
   final String? roofAge, windowAge, furnaceAge, kitchenAge, bathAge;
+
+  // --- NOTES ---
   final String? roofNotes, windowNotes, kitchenNotes, bathNotes, furnaceNotes;
+
+  // --- VALUE INDICATORS ---
   final String? bankValue, ownerValue, purchasePrice, purchaseDate;
+
+  // --- PHOTO ATTACHMENTS ---
   final List<String> photoPaths;
 
   Order({
-    // DB & Sync
     this.localId,
     this.supabaseId,
     this.syncStatus = SyncStatus.localOnly,
-    // Order Details
+    this.userId,
     this.clientFileNumber,
     this.firmFileNumber,
     this.address,
@@ -99,10 +105,8 @@ class Order {
     this.contactEmail,
     this.contactPhone1,
     this.contactPhone2,
-    // Neighbourhood
     this.natureOfDistrict,
     this.developmentType,
-    // Site
     this.configuration,
     this.topography,
     this.waterSupplyType,
@@ -112,7 +116,6 @@ class Order {
     this.driveway,
     this.parking,
     this.occupancy,
-    // Structural Details
     this.builtInPast10Years = false,
     this.propertyType,
     this.designStyle,
@@ -120,11 +123,9 @@ class Order {
     this.sidingType = const [],
     this.roofType = const [],
     this.windowType = const [],
-    // Mechanical
     this.heatingType = const [],
     this.electricalType = const [],
     this.waterType = const [],
-    // Basement
     this.basementType,
     this.basementFinish,
     this.foundationType = const [],
@@ -132,7 +133,6 @@ class Order {
     this.basementFeatures = const [],
     this.basementFlooring,
     this.basementCeilingType = const [],
-    // Levels
     this.mainLevelRooms,
     this.mainLevelFeatures = const [],
     this.mainLevelFlooring,
@@ -145,32 +145,28 @@ class Order {
     this.fourthLevelRooms,
     this.fourthLevelFeatures = const [],
     this.fourthLevelFlooring,
-    // Component Age
     this.roofAge,
     this.windowAge,
     this.furnaceAge,
     this.kitchenAge,
     this.bathAge,
-    // Notes
     this.roofNotes,
     this.windowNotes,
     this.kitchenNotes,
     this.bathNotes,
     this.furnaceNotes,
-    // Value Indicators
     this.bankValue,
     this.ownerValue,
     this.purchasePrice,
     this.purchaseDate,
-    // Photos
     this.photoPaths = const [],
   });
 
-  // copyWith method is now updated for all the new and changed fields
   Order copyWith({
     int? localId,
     String? supabaseId,
     SyncStatus? syncStatus,
+    String? userId,
     String? clientFileNumber,
     String? firmFileNumber,
     String? address,
@@ -244,6 +240,7 @@ class Order {
       localId: localId ?? this.localId,
       supabaseId: supabaseId ?? this.supabaseId,
       syncStatus: syncStatus ?? this.syncStatus,
+      userId: userId ?? this.userId,
       clientFileNumber: clientFileNumber ?? this.clientFileNumber,
       firmFileNumber: firmFileNumber ?? this.firmFileNumber,
       address: address ?? this.address,
@@ -315,12 +312,12 @@ class Order {
     );
   }
 
-  // toDbMap and fromDbMap methods are now updated
   Map<String, dynamic> toDbMap() {
     return {
       'localId': localId,
       'supabaseId': supabaseId,
       'syncStatus': syncStatus.name,
+      'user_id': userId,
       'client_file_number': clientFileNumber,
       'firm_file_number': firmFileNumber,
       'address': address,
@@ -394,9 +391,7 @@ class Order {
 
   Map<String, dynamic> toSupabaseMap() {
     return {
-      // 'localId' is NOT included
-      // 'supabaseId' is NOT included (Supabase handles its own ID)
-      // 'syncStatus' is NOT included
+      'user_id': userId,
       'client_file_number': clientFileNumber,
       'firm_file_number': firmFileNumber,
       'address': address,
@@ -421,11 +416,11 @@ class Order {
       'driveway': driveway,
       'parking': parking,
       'occupancy': occupancy,
-      'built_in_past_10_years': builtInPast10Years, // Supabase can handle bools directly
+      'built_in_past_10_years': builtInPast10Years,
       'property_type': propertyType,
       'design_style': designStyle,
       'construction': construction,
-      'siding_type': sidingType, // Supabase can handle lists directly (as jsonb)
+      'siding_type': sidingType,
       'roof_type': roofType,
       'window_type': windowType,
       'heating_type': heatingType,
@@ -468,15 +463,33 @@ class Order {
     };
   }
 
+  /// local SQLite (which stores lists as JSON strings) and Supabase (which provides lists directly).
   factory Order.fromDbMap(Map<String, dynamic> map) {
+    List<String> parseList(dynamic data) {
+      if (data == null) return [];
+      if (data is String) {
+        return List<String>.from(jsonDecode(data));
+      }
+      if (data is List) {
+        return List<String>.from(data.map((item) => item.toString()));
+      }
+      return [];
+    }
+
+    bool parseBool(dynamic data) {
+      if (data is bool) return data;
+      if (data is int) return data == 1;
+      return false;
+    }
+
     return Order(
       localId: map['localId'],
-      supabaseId:
-          map['supabaseId'] ?? map['id'], // Supabase uses 'id' for primary key
+      supabaseId: map['supabaseId'] ?? map['id'],
       syncStatus: SyncStatus.values.firstWhere(
         (e) => e.name == map['syncStatus'],
         orElse: () => SyncStatus.synced,
       ),
+      userId: map['user_id'],
       clientFileNumber: map['client_file_number'],
       firmFileNumber: map['firm_file_number'],
       address: map['address'],
@@ -501,46 +514,34 @@ class Order {
       driveway: map['driveway'],
       parking: map['parking'],
       occupancy: map['occupancy'],
-      builtInPast10Years: (map['built_in_past_10_years'] is bool)
-          ? map['built_in_past_10_years']
-          : map['built_in_past_10_years'] == 1,
+      builtInPast10Years: parseBool(map['built_in_past_10_years']),
       propertyType: map['property_type'],
       designStyle: map['design_style'],
       construction: map['construction'],
-      sidingType: List<String>.from(jsonDecode(map['siding_type'])),
-      roofType: List<String>.from(jsonDecode(map['roof_type'])),
-      windowType: List<String>.from(jsonDecode(map['window_type'])),
-      heatingType: List<String>.from(jsonDecode(map['heating_type'])),
-      electricalType: List<String>.from(jsonDecode(map['electrical_type'])),
-      waterType: List<String>.from(jsonDecode(map['water_type'])),
+      sidingType: parseList(map['siding_type']),
+      roofType: parseList(map['roof_type']),
+      windowType: parseList(map['window_type']),
+      heatingType: parseList(map['heating_type']),
+      electricalType: parseList(map['electrical_type']),
+      waterType: parseList(map['water_type']),
       basementType: map['basement_type'],
       basementFinish: map['basement_finish'],
-      foundationType: List<String>.from(jsonDecode(map['foundation_type'])),
+      foundationType: parseList(map['foundation_type']),
       basementRooms: map['basement_rooms'],
-      basementFeatures: List<String>.from(jsonDecode(map['basement_features'])),
+      basementFeatures: parseList(map['basement_features']),
       basementFlooring: map['basement_flooring'],
-      basementCeilingType: List<String>.from(
-        jsonDecode(map['basement_ceiling_type']),
-      ),
+      basementCeilingType: parseList(map['basement_ceiling_type']),
       mainLevelRooms: map['main_level_rooms'],
-      mainLevelFeatures: List<String>.from(
-        jsonDecode(map['main_level_features']),
-      ),
+      mainLevelFeatures: parseList(map['main_level_features']),
       mainLevelFlooring: map['main_level_flooring'],
       secondLevelRooms: map['second_level_rooms'],
-      secondLevelFeatures: List<String>.from(
-        jsonDecode(map['second_level_features']),
-      ),
+      secondLevelFeatures: parseList(map['second_level_features']),
       secondLevelFlooring: map['second_level_flooring'],
       thirdLevelRooms: map['third_level_rooms'],
-      thirdLevelFeatures: List<String>.from(
-        jsonDecode(map['third_level_features']),
-      ),
+      thirdLevelFeatures: parseList(map['third_level_features']),
       thirdLevelFlooring: map['third_level_flooring'],
       fourthLevelRooms: map['fourth_level_rooms'],
-      fourthLevelFeatures: List<String>.from(
-        jsonDecode(map['fourth_level_features']),
-      ),
+      fourthLevelFeatures: parseList(map['fourth_level_features']),
       fourthLevelFlooring: map['fourth_level_flooring'],
       roofAge: map['roof_age'],
       windowAge: map['window_age'],
@@ -556,7 +557,7 @@ class Order {
       ownerValue: map['owner_value'],
       purchasePrice: map['purchase_price'],
       purchaseDate: map['purchase_date'],
-      photoPaths: List<String>.from(jsonDecode(map['photo_paths'])),
+      photoPaths: parseList(map['photo_paths']),
     );
   }
 }

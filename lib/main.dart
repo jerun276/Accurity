@@ -40,12 +40,14 @@ Future<void> main() async {
   final orderRepository = OrderRepository(
     databaseRepository,
     () => syncService,
+    supabaseService,
   );
 
   syncService = SyncService(
     orderRepository: orderRepository,
     supabaseService: supabaseService,
     supabaseStorageService: supabaseStorageService,
+    authService: supabaseAuthService,
     connectivity: connectivity,
   );
 

@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../core/constant/app_colors.dart';
 import '../../core/constant/text_styles.dart';
+import '../../core/services/supabase_auth_service.dart';
 import '../../data/models/order.model.dart';
 import '../../data/repositories/order_repository.dart';
-import '../login/login_view.dart';
 import '../order_details/order_details_view.dart';
 import 'bloc/order_list_bloc.dart';
 
@@ -16,8 +16,10 @@ class OrderListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => OrderListBloc(
+        // THE FIX IS HERE: Provide both required services.
         orderRepository: RepositoryProvider.of<OrderRepository>(context),
-      )..add(FetchAllOrders()),
+        authService: RepositoryProvider.of<SupabaseAuthService>(context),
+      )..add(FetchAllOrders()), // Immediately fetch and sync orders on load
       child: const OrderListPage(),
     );
   }
@@ -35,10 +37,9 @@ class OrderListPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const LoginView()),
-                (route) => false,
-              );
+              // Dispatch the logout event to the BLoC, which now handles
+              // clearing local data and signing out.
+              context.read<OrderListBloc>().add(LogoutButtonPressed());
             },
           ),
         ],
@@ -55,14 +56,18 @@ class OrderListPage extends StatelessWidget {
           );
 
           if (context.mounted && newOrder.localId != null) {
-            await Navigator.of(context).push(
+            await Navigator.of(context).push<bool>(
               MaterialPageRoute(
                 builder: (_) =>
                     OrderDetailsView(localOrderId: newOrder.localId!),
               ),
             );
-            // ignore: use_build_context_synchronously
-            context.read<OrderListBloc>().add(FetchAllOrders());
+
+            // After returning, refresh the list to show the newly created order.
+            // This is still useful even with sync-on-load.
+            if (context.mounted) {
+              context.read<OrderListBloc>().add(FetchAllOrders());
+            }
           }
         },
         backgroundColor: AppColors.accent,
@@ -84,7 +89,14 @@ class OrderListContent extends StatelessWidget {
         }
         if (state is OrderListError) {
           return Center(
-            child: Text('Error: ${state.message}', style: AppTextStyles.hint),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                'Error: ${state.message}',
+                textAlign: TextAlign.center,
+                style: AppTextStyles.hint,
+              ),
+            ),
           );
         }
         if (state is OrderListLoaded) {
@@ -97,6 +109,7 @@ class OrderListContent extends StatelessWidget {
               ),
             );
           }
+          // The RefreshIndicator allows the user to manually trigger a sync from the server.
           return RefreshIndicator(
             onRefresh: () async {
               context.read<OrderListBloc>().add(FetchAllOrders());
@@ -133,8 +146,10 @@ class OrderListContent extends StatelessWidget {
                               OrderDetailsView(localOrderId: order.localId!),
                         ),
                       );
-                      // ignore: use_build_context_synchronously
-                      context.read<OrderListBloc>().add(FetchAllOrders());
+                      // After editing, refresh the list.
+                      if (context.mounted) {
+                        context.read<OrderListBloc>().add(FetchAllOrders());
+                      }
                     },
                   ),
                 );
@@ -142,7 +157,7 @@ class OrderListContent extends StatelessWidget {
             ),
           );
         }
-        return const SizedBox.shrink();
+        return const SizedBox.shrink(); // For the initial state
       },
     );
   }

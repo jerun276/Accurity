@@ -52,12 +52,19 @@ class DatabaseRepository {
     await _seedDropdowns(db);
   }
 
+  Future<void> clearAllOrders() async {
+    final db = await database;
+    await db.delete(_ordersTable);
+    print('[DB] All local orders have been cleared.');
+  }
+
   Future<void> _createTables(Database db) async {
     await db.execute('''
       CREATE TABLE $_ordersTable (
         localId INTEGER PRIMARY KEY AUTOINCREMENT,
         supabaseId TEXT,
         syncStatus TEXT NOT NULL,
+        user_id TEXT,
         client_file_number TEXT,
         firm_file_number TEXT,
         address TEXT,

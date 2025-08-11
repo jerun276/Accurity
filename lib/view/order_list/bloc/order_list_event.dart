@@ -9,3 +9,6 @@ sealed class OrderListEvent extends Equatable {
 
 /// Event dispatched to fetch all orders from the repository.
 final class FetchAllOrders extends OrderListEvent {}
+
+final class LogoutButtonPressed extends OrderListEvent {}
+

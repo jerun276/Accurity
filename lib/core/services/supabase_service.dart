@@ -26,4 +26,19 @@ class SupabaseService {
         .update(order.toSupabaseMap())
         .eq('id', order.supabaseId!);
   }
+
+    Future<List<Map<String, dynamic>>> fetchOrdersForUser(String userId) async {
+    try {
+      final response = await _client
+          .from(_tableName)
+          .select() // Select all columns
+          .eq('user_id', userId); // Filter where the user_id matches
+
+      // The response is a List of Maps, which is exactly what we need.
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print('Error fetching orders from Supabase: $e');
+      return []; // Return an empty list on error
+    }
+  }
 }

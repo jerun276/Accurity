@@ -51,5 +51,17 @@
 	<string>This app needs access to the camera to take photos for inspections.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app needs access to the microphone to record videos for inspections.</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- Use your package name as the scheme -->
+				<string>com.example.accurity</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

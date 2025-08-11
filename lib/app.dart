@@ -1,12 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/constant/app_colors.dart';
 import 'core/constant/text_styles.dart';
 import 'view/login/login_view.dart';
+import 'view/order_list/order_list_view.dart';
 
-/// The root widget of the Accurity Inspection application.
-class MyApp extends StatelessWidget {
+// A global navigator key is essential for navigating from the auth listener.
+final navigatorKey = GlobalKey<NavigatorState>();
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    _listenToAuthChanges();
+  }
+
+  /// Listens to Supabase auth state changes and navigates the user accordingly.
+  void _listenToAuthChanges() {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      final AuthChangeEvent event = data.event;
+      final session = data.session;
+
+      // Ensure the widget is still mounted before attempting to navigate.
+      if (!mounted) return;
+
+      if (event == AuthChangeEvent.signedIn && session != null) {
+        print('[Auth Listener] User signed in. Navigating to Order List.');
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const OrderListView()),
+          (route) => false,
+        );
+      } else if (event == AuthChangeEvent.signedOut) {
+        print('[Auth Listener] User signed out. Navigating to Login.');
+        navigatorKey.currentState?.pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginView()),
+          (route) => false,
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,14 +54,18 @@ class MyApp extends StatelessWidget {
       title: 'Accurity Inspection',
       debugShowCheckedModeBanner: false,
       theme: _buildAppTheme(),
-      home: const LoginView(), // The first screen the user will see.
+      // Assign the global navigator key.
+      navigatorKey: navigatorKey,
+      // Determine the initial screen based on whether a user session exists on startup.
+      home: Supabase.instance.client.auth.currentUser == null
+          ? const LoginView()
+          : const OrderListView(),
     );
   }
 
   /// Builds the global theme for the entire application.
   ThemeData _buildAppTheme() {
     return ThemeData(
-      // Define the color scheme based on our AppColors constants.
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.accent,
@@ -29,21 +73,14 @@ class MyApp extends StatelessWidget {
         background: AppColors.background,
         error: AppColors.error,
       ),
-      // Set default colors for various components.
       primaryColor: AppColors.primary,
       scaffoldBackgroundColor: AppColors.background,
-
-      // --- COMPONENT THEMES ---
-
-      // Default AppBar theme.
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.textOnPrimary, // Color for title and icons
+        foregroundColor: AppColors.textOnPrimary,
         elevation: 4.0,
         titleTextStyle: AppTextStyles.sectionHeader,
       ),
-
-      // Default ElevatedButton theme.
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.accent,
@@ -55,9 +92,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-
-      // Default theme for all input fields (TextFormField).
-      // This ensures a consistent look across the entire app.
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surface,
@@ -67,7 +101,6 @@ class MyApp extends StatelessWidget {
         ),
         hintStyle: AppTextStyles.hint,
         labelStyle: AppTextStyles.fieldLabel,
-        // Define the border style for all states.
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8.0),
           borderSide: const BorderSide(color: AppColors.lightGrey, width: 1.0),

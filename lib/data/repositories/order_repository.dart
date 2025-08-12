@@ -7,32 +7,31 @@ import 'database_repository.dart';
 
 class OrderRepository {
   final DatabaseRepository _db;
+
+  // CHANGED: Instead of a direct instance, this is now a function
+  // that knows how to get the SyncService instance. This breaks the
+  // circular dependency during initialization.
+  final SyncService Function() _getSyncService;
   final SupabaseService _supabaseService;
 
-  // This is a 'late' variable, which we promise to set immediately after creation.
-  late SyncService _syncService;
+  // This is a private getter that executes the function to resolve the
+  // SyncService instance only when it's actually needed.
+  SyncService get _syncService => _getSyncService();
 
-  // The constructor takes the direct dependencies.
-  OrderRepository(this._db, this._supabaseService);
+  // The constructor is updated to accept the function.
+  OrderRepository(this._db, this._getSyncService, this._supabaseService);
 
-  /// This setter method is used by main.dart to inject the SyncService.
-  void setSyncService(SyncService service) {
-    _syncService = service;
-  }
-
-  /// Retrieves a single order by its local ID from the local database.
+  /// Retrieves a single order by its local ID.
   Future<Order> getOrder(int localId) async {
     return _db.getOrder(localId);
   }
 
-  /// Retrieves a list of all saved orders from the local database.
+  /// Retrieves a list of all saved orders.
   Future<List<Order>> getAllOrders() async {
     return _db.getAllOrders();
   }
 
   /// Saves an order, intelligently sets its sync status, and triggers a sync.
-  /// NOTE: This method was calling a flawed _db.saveOrder() which, combined with
-  /// a flawed Order.fromDbMap(), caused the bug.
   Future<Order> saveOrder(Order order) async {
     SyncStatus newStatus;
 
@@ -45,6 +44,9 @@ class OrderRepository {
     final orderToSave = order.copyWith(syncStatus: newStatus);
     final savedOrder = await _db.saveOrder(orderToSave);
 
+    // This now works perfectly. When this line is called, the `_syncService`
+    // getter executes the function provided by main.dart, returning the
+    // fully initialized SyncService instance.
     unawaited(_syncService.syncUnsyncedOrders());
 
     return savedOrder;
@@ -63,28 +65,23 @@ class OrderRepository {
     return _db.updateLocalOrder(order);
   }
 
-  /// Fetches orders from Supabase, clears the local DB, and saves the new data.
+  /// Fetches orders from Supabase for a user, clears the local DB, and saves the new data.
   Future<void> syncFromServer(String userId) async {
     print('[Repo] Starting sync from server for user $userId');
+    // 1. Fetch the user's data from the cloud.
     final serverOrdersData = await _supabaseService.fetchOrdersForUser(userId);
-    // NOTE: The bug originated here, where Order.fromDbMap was failing
-    // to correctly parse the 'localId' due to inconsistent naming.
     final serverOrders = serverOrdersData
         .map((data) => Order.fromDbMap(data))
         .toList();
 
+    // 2. Clear all existing data from the local SQLite database.
     await _db.clearAllOrders();
 
-    final ordersToSave = serverOrders
-        .map((order) => order.copyWith(syncStatus: SyncStatus.synced))
-        .toList();
-
-    // The `bulkInsertOrders` method did not exist at this point in time.
-    // We were using a simple loop.
-    for (final order in ordersToSave) {
-      await _db.saveOrder(order);
+    // 3. Save the fresh data from the server into the local database.
+    for (final order in serverOrders) {
+      // We must mark them as synced to prevent an immediate re-upload.
+      await _db.saveOrder(order.copyWith(syncStatus: SyncStatus.synced));
     }
-
     print(
       '[Repo] Sync from server complete. Saved ${serverOrders.length} orders locally.',
     );

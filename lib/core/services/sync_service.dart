@@ -1,14 +1,12 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:accurity/data/models/sync_result.model.dart';
-import 'package:accurity/data/models/sync_state.enum.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:path/path.dart' as p;
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/models/order.model.dart';
 import '../../data/models/sync_status.enum.dart';
 import '../../data/repositories/order_repository.dart';
+import 'package:accurity/data/models/sync_state.enum.dart';
 import 'supabase_auth_service.dart';
 import 'supabase_service.dart';
 import 'supabase_storage_service.dart';
@@ -20,11 +18,8 @@ class SyncService {
   final SupabaseAuthService _authService;
   final Connectivity _connectivity;
 
-  final _syncStateController = StreamController<SyncResult>.broadcast();
-  Stream<SyncResult> get syncStateStream => _syncStateController.stream;
-
-  // --- THE CRITICAL FIX: The Syncing Lock ---
-  bool _isSyncing = false;
+  final _syncStateController = StreamController<SyncState>.broadcast();
+  Stream<SyncState> get syncStateStream => _syncStateController.stream;
 
   SyncService({
     required OrderRepository orderRepository,
@@ -42,38 +37,40 @@ class SyncService {
     _syncStateController.close();
   }
 
+  /// Checks for unsynced orders and pushes them to Supabase if online.
   Future<void> syncUnsyncedOrders() async {
-    // 1. Check the lock. If a sync is already running, exit immediately.
-    if (_isSyncing) {
-      print('[SyncService] Sync is already in progress. Aborting new request.');
+    _syncStateController.add(SyncState.syncing);
+
+    // 1. Check for internet connection.
+    final connectivityResult = await _connectivity.checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      print('[SyncService] No internet connection. Sync aborted.');
+      _syncStateController.add(SyncState.failure);
       return;
     }
 
-    // 2. Acquire the lock and announce that we are starting.
-    _isSyncing = true;
-    _syncStateController.add(SyncResult(SyncState.syncing));
+    // 2. Get the current user's ID. If no one is logged in, we can't sync.
+    final currentUserId = _authService.currentUser?.id;
+    if (currentUserId == null) {
+      print('[SyncService] No authenticated user found. Cannot sync.');
+      _syncStateController.add(SyncState.failure);
+      return;
+    }
 
-    try {
-      final connectivityResult = await _connectivity.checkConnectivity();
-      if (connectivityResult == ConnectivityResult.none) {
-        throw Exception("No internet connection.");
-      }
+    // 3. Get all orders from the local database that need syncing.
+    final unsyncedOrders = await _orderRepository.getUnsyncedOrders();
+    if (unsyncedOrders.isEmpty) {
+      print('[SyncService] No unsynced orders to process.');
+      _syncStateController.add(SyncState.idle);
+      return;
+    }
 
-      final currentUserId = _authService.currentUser?.id;
-      if (currentUserId == null) {
-        throw Exception("No authenticated user found.");
-      }
+    print('[SyncService] Found ${unsyncedOrders.length} orders to sync.');
+    bool allSyncsSuccessful = true;
 
-      final unsyncedOrders = await _orderRepository.getUnsyncedOrders();
-      if (unsyncedOrders.isEmpty) {
-        _syncStateController.add(SyncResult(SyncState.idle));
-        return; // No work to do, exit early.
-      }
-
-      print('[SyncService] Found ${unsyncedOrders.length} orders to sync.');
-      int successCount = 0;
-
-      for (var order in unsyncedOrders) {
+    // 4. Loop through each unsynced order and process it.
+    for (var order in unsyncedOrders) {
+      try {
         if (order.syncStatus == SyncStatus.localOnly) {
           order = order.copyWith(userId: currentUserId);
         }
@@ -89,7 +86,6 @@ class SyncService {
               syncStatus: SyncStatus.synced,
             );
             await _orderRepository.updateLocalOrder(updatedOrder);
-            successCount++;
           }
         } else if (orderWithCloudPhotos.syncStatus == SyncStatus.needsUpdate) {
           await _supabaseService.updateOrder(orderWithCloudPhotos);
@@ -97,59 +93,70 @@ class SyncService {
             syncStatus: SyncStatus.synced,
           );
           await _orderRepository.updateLocalOrder(updatedOrder);
-          successCount++;
         }
-      }
-
-      if (successCount > 0) {
-        _syncStateController.add(
-          SyncResult(
-            SyncState.success,
-            message: "Sync complete! $successCount order(s) updated.",
-          ),
+      } catch (e) {
+        allSyncsSuccessful = false; 
+        print(
+          '[SyncService] ERROR syncing order with localId: ${order.localId}. Error: $e',
         );
       }
-    } catch (e) {
-      print('[SyncService] ERROR during sync process: $e');
-      String errorMessage = "An unexpected error occurred.";
-      if (e is PostgrestException) {
-        errorMessage = "Database Error: ${e.message}";
-      }
-      if (e is StorageException) errorMessage = "Storage Error: ${e.message}";
-      if (e is Exception) errorMessage = e.toString();
-      _syncStateController.add(
-        SyncResult(SyncState.failure, message: "Sync failed. $errorMessage"),
-      );
-    } finally {
-      // 3. ALWAYS release the lock, whether the sync succeeded or failed.
-      _isSyncing = false;
-      await Future.delayed(const Duration(seconds: 3));
-      _syncStateController.add(SyncResult(SyncState.idle));
-      print('[SyncService] Sync process finished.');
     }
+
+    // 2. Announce the final result.
+    if (allSyncsSuccessful) {
+      _syncStateController.add(SyncState.success);
+    } else {
+      _syncStateController.add(SyncState.failure);
+    }
+
+    // After a short delay, return to idle state
+    await Future.delayed(const Duration(seconds: 3));
+    _syncStateController.add(SyncState.idle);
+
+    print('[SyncService] Sync process finished.');
   }
 
+  /// A helper method to upload photos for a single order.
   Future<Order> _uploadOrderPhotos(Order order) async {
-    // ... This helper method remains the same ...
-    if (order.photoPaths.isEmpty) return order;
+    if (order.photoPaths.isEmpty) {
+      return order;
+    }
+
     final List<String> cloudPhotoUrls = [];
     bool hasChanges = false;
+
     for (final path in order.photoPaths) {
       if (path.startsWith('http')) {
         cloudPhotoUrls.add(path);
       } else {
         hasChanges = true;
+        print('[SyncService] Found local photo to upload: $path');
         final file = File(path);
+
         if (await file.exists()) {
           final fileName = 'order_${order.localId}_${p.basename(file.path)}';
-          final publicUrl = await _supabaseStorageService.uploadImage(
-            file,
-            fileName,
-          );
-          cloudPhotoUrls.add(publicUrl);
+
+          try {
+            final publicUrl = await _supabaseStorageService.uploadImage(
+              file,
+              fileName,
+            );
+            cloudPhotoUrls.add(publicUrl);
+            print('[SyncService] Photo uploaded successfully. URL: $publicUrl');
+          } catch (e) {
+            print('[SyncService] FAILED to upload photo: $path. Error: $e');
+            cloudPhotoUrls.add(path);
+          }
+        } else {
+          print('[SyncService] Local photo file not found, skipping: $path');
         }
       }
     }
-    return hasChanges ? order.copyWith(photoPaths: cloudPhotoUrls) : order;
+
+    if (hasChanges) {
+      return order.copyWith(photoPaths: cloudPhotoUrls);
+    } else {
+      return order;
+    }
   }
 }

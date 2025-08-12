@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'core/bloc/feedback_bloc.dart';
 
 import 'core/constant/app_colors.dart';
 import 'core/constant/text_styles.dart';
@@ -56,26 +54,9 @@ class _MyAppState extends State<MyApp> {
       title: 'Accurity Inspection',
       debugShowCheckedModeBanner: false,
       theme: _buildAppTheme(),
+      // Assign the global navigator key.
       navigatorKey: navigatorKey,
-      builder: (context, child) {
-        return BlocListener<FeedbackBloc, FeedbackState>(
-          listener: (context, state) {
-            if (state is ShowFeedbackSnackbar) {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(
-                    content: Text(state.message),
-                    backgroundColor: state.isError
-                        ? AppColors.error
-                        : AppColors.accent,
-                  ),
-                );
-            }
-          },
-          child: child!,
-        );
-      },
+      // Determine the initial screen based on whether a user session exists on startup.
       home: Supabase.instance.client.auth.currentUser == null
           ? const LoginView()
           : const OrderListView(),

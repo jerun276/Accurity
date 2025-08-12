@@ -9,47 +9,28 @@ class SupabaseAuthService {
   User? get currentUser => _client.auth.currentUser;
 
   /// Signs a user in with their email and password.
+  /// Returns null on success, or an error message string on failure.
   Future<String?> signInWithEmail(String email, String password) async {
     try {
       await _client.auth.signInWithPassword(email: email, password: password);
       print('[AuthService] Sign-in successful for user: ${currentUser?.email}');
-      return null;
+      return null; // Success
     } on AuthException catch (e) {
       print('[AuthService] Sign-in FAILED: ${e.message}');
-      return e.message;
+      return e.message; // Return error message
     }
   }
 
   /// Signs a new user up with their email and password.
+  /// Returns null on success, or an error message string on failure.
   Future<String?> signUpWithEmail(String email, String password) async {
     try {
       await _client.auth.signUp(email: email, password: password);
       print('[AuthService] Sign-up successful for user: ${currentUser?.email}');
-      return null;
+      return null; // Success
     } on AuthException catch (e) {
       print('[AuthService] Sign-up FAILED: ${e.message}');
-      return e.message;
-    }
-  }
-
-  Future<void> initialize() async {
-    // This logic is for testing with a placeholder user.
-    if (currentUser == null) {
-      print(
-        '[AuthService] No user session found. Signing in anonymously for testing...',
-      );
-      try {
-        await _client.auth.signInAnonymously();
-        print(
-          '[AuthService] Anonymous sign-in successful. User ID: ${currentUser?.id}',
-        );
-      } catch (e) {
-        print('[AuthService] Anonymous sign-in FAILED: $e');
-      }
-    } else {
-      print(
-        '[AuthService] Existing user session found. User ID: ${currentUser?.id}',
-      );
+      return e.message; // Return error message
     }
   }
 
@@ -62,6 +43,7 @@ class SupabaseAuthService {
   Future<String?> signInWithGoogle() async {
     try {
       // The redirectTo parameter is crucial for mobile auth.
+      // It must match the custom scheme you configured in the native files.
       const redirectTo = 'com.example.accurity://callback';
 
       await _client.auth.signInWithOAuth(

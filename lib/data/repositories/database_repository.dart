@@ -566,23 +566,17 @@ class DatabaseRepository {
     final db = await database;
     final map = order.toDbMap();
 
-    if (order.localId == null) {
-      print('[DB] Inserting new order...');
+    // Remove null id for insert, keep it for update
+    if (map['localId'] == null) {
       map.remove('localId');
-      final newId = await db.insert(_ordersTable, map);
-      print('[DB] New order inserted with localId: $newId');
-      return order.copyWith(localId: newId);
-    } else {
-      print('[DB] Updating existing order with localId: ${order.localId}');
-      await db.update(
-        _ordersTable,
-        map,
-        where: 'localId = ?',
-        whereArgs: [order.localId],
-      );
-      print('[DB] Order updated successfully.');
-      return order;
     }
+
+    final id = await db.insert(
+      _ordersTable,
+      map,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    return order.copyWith(localId: id);
   }
 
   /// Retrieves a single order by its local ID.

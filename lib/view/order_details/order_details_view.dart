@@ -89,22 +89,45 @@ class OrderDetailsPage extends StatelessWidget {
           final shouldPop = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Exit Inspection?'),
-              content: const Text(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16.0), // Rounded corners
+              ),
+              backgroundColor: AppColors.surface,
+              title: Text(
+                'Exit Inspection?',
+                style: AppTextStyles.listItemTitle.copyWith(
+                  fontSize: 20,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              content: Text(
                 'All changes have been saved automatically. Do you want to go back to the order list?',
+                style: AppTextStyles.listItemSubtitle,
               ),
               actions: [
                 SyncStatusIndicator(),
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Stay'),
+                  child: Text(
+                    'Stay',
+                    style: AppTextStyles.button.copyWith(
+                      color: AppColors.primary,
+                      letterSpacing: 0,
+                    ),
+                  ),
                 ),
                 TextButton(
                   onPressed: () {
                     syncService.syncUnsyncedOrders();
                     Navigator.pop(context, true);
                   },
-                  child: const Text('Exit & Sync'),
+                  child: Text(
+                    'Exit & Sync',
+                    style: AppTextStyles.button.copyWith(
+                      color: AppColors.accent,
+                      letterSpacing: 0,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -112,22 +135,43 @@ class OrderDetailsPage extends StatelessWidget {
           return shouldPop ?? false;
         },
         child: Scaffold(
+          backgroundColor: AppColors.background,
           appBar: AppBar(
+            backgroundColor: AppColors.primary,
+            elevation: 4.0,
+            shadowColor: AppColors.primary.withOpacity(0.5),
+            iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
             title: BlocBuilder<OrderDetailsBloc, OrderDetailsState>(
               builder: (context, state) {
                 if (state is OrderDetailsLoaded) {
                   return Text(
                     state.order.address ?? 'Inspection Details',
+                    style: AppTextStyles.sectionHeader.copyWith(
+                      color: AppColors.textOnPrimary,
+                      fontSize: 20, // Slightly smaller to fit with tabs
+                      fontWeight: FontWeight.w700,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   );
                 }
-                return const Text('Inspection Details');
+                return const Text(
+                  'Inspection Details',
+                  style: AppTextStyles.sectionHeader,
+                );
               },
             ),
             bottom: TabBar(
               isScrollable: true,
               indicatorColor: AppColors.accent,
-              labelStyle: AppTextStyles.button.copyWith(fontSize: 14),
+              labelColor:
+                  AppColors.textOnPrimary, // Color of the selected tab label
+              unselectedLabelColor: AppColors.textOnPrimary.withOpacity(
+                0.7,
+              ), // Color of unselected labels
+              labelStyle: AppTextStyles.listItemSubtitle.copyWith(
+                fontWeight: FontWeight.w600, // Make the labels semi-bold
+                fontSize: 14,
+              ),
               tabs: _sectionTitles.map((title) => Tab(text: title)).toList(),
             ),
           ),
@@ -135,7 +179,9 @@ class OrderDetailsPage extends StatelessWidget {
             builder: (context, state) {
               if (state is OrderDetailsLoading ||
                   state is OrderDetailsInitial) {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
               }
               if (state is OrderDetailsError) {
                 return Center(child: Text(state.message));

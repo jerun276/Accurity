@@ -6,6 +6,7 @@ import '../../../core/constant/text_styles.dart';
 import '../../../core/services/photo_service.dart';
 import '../../../data/repositories/order_repository.dart';
 import '../../../core/widgets/sync_status_indicator.dart';
+import '../../../core/services/sync_service.dart';
 import 'bloc/order_details_bloc.dart';
 import 'sections/basement_view.dart';
 import 'sections/component_age_view.dart';
@@ -78,6 +79,8 @@ class OrderDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final syncService = context.read<SyncService>();
+
     return DefaultTabController(
       length: _sectionTitles.length,
       // ignore: deprecated_member_use
@@ -97,8 +100,11 @@ class OrderDetailsPage extends StatelessWidget {
                   child: const Text('Stay'),
                 ),
                 TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Exit'),
+                  onPressed: () {
+                    syncService.syncUnsyncedOrders();
+                    Navigator.pop(context, true);
+                  },
+                  child: const Text('Exit & Sync'),
                 ),
               ],
             ),

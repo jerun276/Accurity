@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/constant/app_colors.dart';
 import 'core/constant/text_styles.dart';
 import 'view/login/login_view.dart';
 import 'view/order_list/order_list_view.dart';
+import 'core/bloc/feedback_bloc.dart';
 
 // A global navigator key is essential for navigating from the auth listener.
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -60,6 +62,23 @@ class _MyAppState extends State<MyApp> {
       home: Supabase.instance.client.auth.currentUser == null
           ? const LoginView()
           : const OrderListView(),
+      builder: (context, child) {
+        return BlocListener<FeedbackBloc, FeedbackState>(
+          listener: (context, state) {
+            if (state is ShowFeedbackSnackbar) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: state.isError ? AppColors.error : Colors.green,
+                  ),
+                );
+            }
+          },
+          child: child!,
+        );
+      },
     );
   }
 

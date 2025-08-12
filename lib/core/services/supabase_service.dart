@@ -9,7 +9,7 @@ class SupabaseService {
     final response = await _client
         .from(_tableName)
         // Use the new Supabase-specific map
-        .insert(order.toSupabaseMap()) 
+        .insert(order.toSupabaseMap())
         .select('id')
         .single();
 
@@ -27,17 +27,15 @@ class SupabaseService {
         .eq('id', order.supabaseId!);
   }
 
-    Future<List<Map<String, dynamic>>> fetchOrdersForUser(String userId) async {
+  Future<List<Map<String, dynamic>>> fetchOrdersForUser() async {
     try {
-      final response = await _client
-          .from(_tableName)
-          .select() // Select all columns
-          .eq('user_id', userId); // Filter where the user_id matches
-
-      // The response is a List of Maps, which is exactly what we need.
+      print('[SupabaseService] Calling RPC function: get_orders_for_user');
+      final response = await _client.rpc('get_orders_for_user');
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print('Error fetching orders from Supabase: $e');
+      print(
+        '[SupabaseService] Error fetching orders from Supabase via RPC: $e',
+      );
       return []; // Return an empty list on error
     }
   }

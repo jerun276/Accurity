@@ -1,59 +1,60 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// A service to handle all authentication logic with Supabase.
 class SupabaseAuthService {
   final SupabaseClient _client = Supabase.instance.client;
 
-  /// Gets the current logged-in user.
   User? get currentUser => _client.auth.currentUser;
 
-  /// Signs a user in with their email and password.
-  /// Returns null on success, or an error message string on failure.
+  /// Ensures a user session exists, creating an anonymous one if needed.
+  /// This should be called once when the app starts.
+  Future<void> initialize() async {
+    if (currentUser == null) {
+      print(
+        '[AuthService] No user session found. Signing in anonymously for testing.',
+      );
+      try {
+        await _client.auth.signInAnonymously();
+        print('[AuthService] Anonymous sign-in successful.');
+      } catch (e) {
+        print('[AuthService] Anonymous sign-in FAILED: $e');
+      }
+    } else {
+      print('[AuthService] Existing user session found.');
+    }
+  }
+
   Future<String?> signInWithEmail(String email, String password) async {
     try {
       await _client.auth.signInWithPassword(email: email, password: password);
-      print('[AuthService] Sign-in successful for user: ${currentUser?.email}');
-      return null; // Success
+      return null;
     } on AuthException catch (e) {
-      print('[AuthService] Sign-in FAILED: ${e.message}');
-      return e.message; // Return error message
+      return e.message;
     }
   }
 
-  /// Signs a new user up with their email and password.
-  /// Returns null on success, or an error message string on failure.
   Future<String?> signUpWithEmail(String email, String password) async {
     try {
       await _client.auth.signUp(email: email, password: password);
-      print('[AuthService] Sign-up successful for user: ${currentUser?.email}');
-      return null; // Success
+      return null;
     } on AuthException catch (e) {
-      print('[AuthService] Sign-up FAILED: ${e.message}');
-      return e.message; // Return error message
+      return e.message;
     }
   }
 
-  /// Signs the current user out.
   Future<void> signOut() async {
     await _client.auth.signOut();
-    print('[AuthService] User signed out.');
   }
 
   Future<String?> signInWithGoogle() async {
     try {
-      // The redirectTo parameter is crucial for mobile auth.
-      // It must match the custom scheme you configured in the native files.
       const redirectTo = 'com.example.accurity://callback';
-
       await _client.auth.signInWithOAuth(
         OAuthProvider.google,
         redirectTo: kIsWeb ? null : redirectTo,
       );
-
-      return null; // Success
+      return null;
     } on AuthException catch (e) {
-      print('[AuthService] Google Sign-in FAILED: ${e.message}');
       return e.message;
     }
   }

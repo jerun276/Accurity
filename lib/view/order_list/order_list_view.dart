@@ -10,18 +10,20 @@ import '../order_details/order_details_view.dart';
 import 'bloc/order_list_bloc.dart';
 import '../../core/widgets/sync_status_indicator.dart'; // Import the new widget
 
-
 class OrderListView extends StatelessWidget {
   const OrderListView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => OrderListBloc(
-        // THE FIX IS HERE: Provide both required services.
-        orderRepository: RepositoryProvider.of<OrderRepository>(context),
-        authService: RepositoryProvider.of<SupabaseAuthService>(context),
-      )..add(FetchAllOrders()), // Immediately fetch and sync orders on load
+      create: (context) =>
+          OrderListBloc(
+            // THE FIX IS HERE: Provide both required services.
+            orderRepository: RepositoryProvider.of<OrderRepository>(context),
+            authService: RepositoryProvider.of<SupabaseAuthService>(context),
+          )..add(
+            SyncOrdersFromServer(),
+          ), // Immediately fetch and sync orders on load
       child: const OrderListPage(),
     );
   }
@@ -36,7 +38,7 @@ class OrderListPage extends StatelessWidget {
       appBar: AppBar(
         title: const Text('My Inspections'),
         actions: [
-          const SyncStatusIndicator(), 
+          const SyncStatusIndicator(),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -69,7 +71,7 @@ class OrderListPage extends StatelessWidget {
             // After returning, refresh the list to show the newly created order.
             // This is still useful even with sync-on-load.
             if (context.mounted) {
-              context.read<OrderListBloc>().add(FetchAllOrders());
+              context.read<OrderListBloc>().add(FetchLocalOrders());
             }
           }
         },
@@ -115,7 +117,7 @@ class OrderListContent extends StatelessWidget {
           // The RefreshIndicator allows the user to manually trigger a sync from the server.
           return RefreshIndicator(
             onRefresh: () async {
-              context.read<OrderListBloc>().add(FetchAllOrders());
+              context.read<OrderListBloc>().add(SyncOrdersFromServer());
             },
             child: ListView.builder(
               padding: const EdgeInsets.all(8.0),
@@ -151,7 +153,7 @@ class OrderListContent extends StatelessWidget {
                       );
                       // After editing, refresh the list.
                       if (context.mounted) {
-                        context.read<OrderListBloc>().add(FetchAllOrders());
+                        context.read<OrderListBloc>().add(FetchLocalOrders());
                       }
                     },
                   ),

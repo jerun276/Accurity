@@ -1,7 +1,8 @@
-import 'package:accurity/data/models/sync_state.enum.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../data/models/sync_result.model.dart';
+import '../../data/models/sync_state.enum.dart';
 import '../services/sync_service.dart';
 
 class SyncStatusIndicator extends StatelessWidget {
@@ -9,45 +10,50 @@ class SyncStatusIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Find the single instance of the SyncService
+    // Read the single instance of the SyncService provided in main.dart
     final syncService = context.read<SyncService>();
 
-    return StreamBuilder<SyncState>(
+    return StreamBuilder<SyncResult>(
       stream: syncService.syncStateStream,
-      initialData: SyncState.idle,
+      initialData: SyncResult(SyncState.idle),
       builder: (context, snapshot) {
-        final state = snapshot.data ?? SyncState.idle;
+        final state = snapshot.data?.state ?? SyncState.idle;
 
-        // Return a different widget based on the current sync state
+        Widget iconWidget;
         switch (state) {
           case SyncState.syncing:
-            return const Padding(
-              padding: EdgeInsets.all(12.0),
+            iconWidget = const Padding(
+              padding: EdgeInsets.all(16.0),
               child: SizedBox(
-                height: 24,
-                width: 24,
+                height: 20,
+                width: 20,
                 child: CircularProgressIndicator(
                   color: Colors.white,
-                  strokeWidth: 2.5,
+                  strokeWidth: 2.0,
                 ),
               ),
             );
+            break;
           case SyncState.success:
-            return const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(Icons.check_circle, color: Colors.greenAccent),
+            iconWidget = const Icon(
+              Icons.check_circle,
+              color: Colors.greenAccent,
             );
+            break;
           case SyncState.failure:
-            return const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(Icons.error, color: Colors.orangeAccent),
-            );
+            iconWidget = const Icon(Icons.error, color: Colors.orangeAccent);
+            break;
           case SyncState.idle:
-            return const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(Icons.cloud_done_outlined, color: Colors.white70),
+            iconWidget = const Icon(
+              Icons.cloud_done_outlined,
+              color: Colors.white70,
             );
+            break;
         }
+        return Padding(
+          padding: const EdgeInsets.only(right: 8.0),
+          child: iconWidget,
+        );
       },
     );
   }

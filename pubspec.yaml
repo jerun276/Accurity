@@ -28,9 +28,9 @@ dependencies:
   supabase_flutter: ^2.3.4
   connectivity_plus: ^5.0.2
   syncfusion_flutter_signaturepad: ^26.1.35
-  http: ^1.1.0 # Or latest version
-  cached_network_image: ^3.3.0 # Or latest version
-  sentry_flutter: ^8.0.0 # Or latest version
+  http: ^1.1.0
+  cached_network_image: ^3.3.0
+  sentry_flutter: ^8.0.0
 
 dev_dependencies:
   flutter_test:

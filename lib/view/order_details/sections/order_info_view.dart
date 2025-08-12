@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
-
 import '../../../core/constant/app_colors.dart';
 import '../../../core/constant/text_styles.dart';
 import '../../../core/widgets/app_text_form_field.dart';
+import '../../../core/widgets/app_date_time_picker.dart';
 import '../../../core/widgets/searchable_dropdown_form_field.dart';
 import '../bloc/order_details_bloc.dart';
 
@@ -72,36 +71,13 @@ class OrderInfoView extends StatelessWidget {
                 ),
 
                 // --- Appointment Date ---
-                const Text('Appointment', style: AppTextStyles.fieldLabel),
-                const SizedBox(height: 8),
-                TextFormField(
-                  readOnly: true,
-                  controller: TextEditingController(text: order.appointment),
-                  decoration: const InputDecoration(
-                    hintText: 'Select Appointment Date',
-                    suffixIcon: Icon(Icons.calendar_today),
+                AppDateTimePicker(
+                  label: 'Appointment',
+                  initialValue: order.appointment,
+                  pickTime: true, // We want both date and time for this one
+                  onChanged: (val) => context.read<OrderDetailsBloc>().add(
+                    OrderFieldChanged(fieldName: 'appointment', value: val),
                   ),
-                  onTap: () async {
-                    // TODO: Implement Date Picker logic
-                    final DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: DateTime.now(),
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2101),
-                    );
-                    if (picked != null) {
-                      // Format the date and dispatch the event
-                      final formattedDate = DateFormat(
-                        'yyyy-MM-dd',
-                      ).format(picked);
-                      context.read<OrderDetailsBloc>().add(
-                        OrderFieldChanged(
-                          fieldName: 'appointment',
-                          value: formattedDate,
-                        ),
-                      );
-                    }
-                  },
                 ),
                 const SizedBox(height: 24),
 

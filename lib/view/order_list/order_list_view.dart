@@ -8,7 +8,7 @@ import '../../data/models/order.model.dart';
 import '../../data/repositories/order_repository.dart';
 import '../order_details/order_details_view.dart';
 import 'bloc/order_list_bloc.dart';
-import '../../core/widgets/sync_status_indicator.dart'; // Import the new widget
+import '../../core/widgets/sync_status_indicator.dart';
 
 class OrderListView extends StatelessWidget {
   const OrderListView({super.key});
@@ -16,14 +16,10 @@ class OrderListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) =>
-          OrderListBloc(
-            // THE FIX IS HERE: Provide both required services.
-            orderRepository: RepositoryProvider.of<OrderRepository>(context),
-            authService: RepositoryProvider.of<SupabaseAuthService>(context),
-          )..add(
-            SyncOrdersFromServer(),
-          ), // Immediately fetch and sync orders on load
+      create: (context) => OrderListBloc(
+        orderRepository: RepositoryProvider.of<OrderRepository>(context),
+        authService: RepositoryProvider.of<SupabaseAuthService>(context),
+      )..add(SyncOrdersFromServer()),
       child: const OrderListPage(),
     );
   }
@@ -35,15 +31,27 @@ class OrderListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('My Inspections'),
+        title: Text(
+          'My Inspections',
+          style: AppTextStyles.sectionHeader.copyWith(
+            color: AppColors.textOnPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: false,
+        backgroundColor: AppColors.primary,
+        elevation: 4.0,
+        shadowColor: AppColors.primary.withOpacity(0.5),
+        iconTheme: const IconThemeData(color: AppColors.textOnPrimary),
         actions: [
           const SyncStatusIndicator(),
           IconButton(
             icon: const Icon(Icons.logout),
+            tooltip: 'Log out',
             onPressed: () {
-              // Dispatch the logout event to the BLoC, which now handles
-              // clearing local data and signing out.
               context.read<OrderListBloc>().add(LogoutButtonPressed());
             },
           ),
@@ -68,14 +76,15 @@ class OrderListPage extends StatelessWidget {
               ),
             );
 
-            // After returning, refresh the list to show the newly created order.
-            // This is still useful even with sync-on-load.
             if (context.mounted) {
               context.read<OrderListBloc>().add(FetchLocalOrders());
             }
           }
         },
         backgroundColor: AppColors.accent,
+        foregroundColor: AppColors.textOnPrimary,
+        elevation: 8.0,
+        tooltip: 'Add new inspection',
         child: const Icon(Icons.add),
       ),
     );
@@ -90,7 +99,9 @@ class OrderListContent extends StatelessWidget {
     return BlocBuilder<OrderListBloc, OrderListState>(
       builder: (context, state) {
         if (state is OrderListLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          );
         }
         if (state is OrderListError) {
           return Center(
@@ -114,27 +125,36 @@ class OrderListContent extends StatelessWidget {
               ),
             );
           }
-          // The RefreshIndicator allows the user to manually trigger a sync from the server.
           return RefreshIndicator(
+            color: AppColors.primary,
             onRefresh: () async {
               context.read<OrderListBloc>().add(SyncOrdersFromServer());
             },
             child: ListView.builder(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(12.0), // Increased padding
               itemCount: state.orders.length,
               itemBuilder: (context, index) {
                 final order = state.orders[index];
                 return Card(
-                  elevation: 2.0,
-                  margin: const EdgeInsets.symmetric(vertical: 6.0),
+                  color: AppColors.surface,
+                  elevation: 6.0, // Increased elevation
+                  margin: const EdgeInsets.symmetric(
+                    vertical: 8.0, // Increased vertical margin
+                    horizontal: 0,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(
-                      vertical: 8.0,
+                      vertical: 12.0, // Increased vertical padding
                       horizontal: 16.0,
                     ),
                     title: Text(
                       order.address ?? 'No Address',
-                      style: AppTextStyles.listItemTitle,
+                      style: AppTextStyles.listItemTitle.copyWith(
+                        fontSize: 18.0, // Increased font size for the title
+                      ),
                     ),
                     subtitle: Text(
                       'File: ${order.firmFileNumber ?? 'N/A'}\nStatus: ${order.syncStatus.name}',
@@ -143,6 +163,7 @@ class OrderListContent extends StatelessWidget {
                     trailing: const Icon(
                       Icons.arrow_forward_ios,
                       color: AppColors.mediumGrey,
+                      size: 16,
                     ),
                     onTap: () async {
                       await Navigator.of(context).push(
@@ -151,7 +172,6 @@ class OrderListContent extends StatelessWidget {
                               OrderDetailsView(localOrderId: order.localId!),
                         ),
                       );
-                      // After editing, refresh the list.
                       if (context.mounted) {
                         context.read<OrderListBloc>().add(FetchLocalOrders());
                       }
@@ -162,7 +182,7 @@ class OrderListContent extends StatelessWidget {
             ),
           );
         }
-        return const SizedBox.shrink(); // For the initial state
+        return const SizedBox.shrink();
       },
     );
   }

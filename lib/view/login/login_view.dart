@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../core/constant/app_colors.dart';
 import '../../../core/constant/text_styles.dart';
 import '../../../core/services/supabase_auth_service.dart';
-// Note: We no longer need to import OrderListView here.
 import 'bloc/login_bloc.dart';
 
 class LoginView extends StatelessWidget {
@@ -18,7 +17,40 @@ class LoginView extends StatelessWidget {
         create: (context) => LoginBloc(
           authService: RepositoryProvider.of<SupabaseAuthService>(context),
         ),
-        child: const LoginForm(),
+        child: Stack(
+          children: [
+            // --- First Purple Circular Background Shape (top-right) ---
+            Positioned(
+              top: -150,
+              right: -150,
+              child: Container(
+                width: 350,
+                height: 350,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(0.2),
+                ),
+              ),
+            ),
+            // --- Second Purple Circular Background Shape (bottom-left) ---
+            Positioned(
+              bottom: -100, // Adjust position as needed
+              left: -100, // Adjust position as needed
+              child: Container(
+                width: 250, // Slightly smaller size for variation
+                height: 250,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(
+                    0.1,
+                  ), // A lighter shade to make it less prominent
+                ),
+              ),
+            ),
+            // --- The Login Form itself ---
+            const LoginForm(),
+          ],
+        ),
       ),
     );
   }
@@ -26,6 +58,7 @@ class LoginView extends StatelessWidget {
 
 class LoginForm extends StatefulWidget {
   const LoginForm({super.key});
+
   @override
   State<LoginForm> createState() => _LoginFormState();
 }
@@ -71,7 +104,6 @@ class _LoginFormState extends State<LoginForm> {
   Widget build(BuildContext context) {
     return BlocListener<LoginBloc, LoginState>(
       listener: (context, state) {
-        // The listener's only job now is to show error messages.
         if (state is LoginFailure) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
@@ -82,11 +114,10 @@ class _LoginFormState extends State<LoginForm> {
               ),
             );
         }
-        // The LoginSuccess navigation logic has been removed from here.
       },
       child: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(32.0),
           child: Form(
             key: _formKey,
             child: Column(
@@ -95,76 +126,154 @@ class _LoginFormState extends State<LoginForm> {
               children: [
                 const Icon(
                   Icons.shield_outlined,
-                  size: 80,
+                  size: 96,
                   color: AppColors.primary,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 Text(
-                  _isSigningUp ? 'Create Account' : 'Accurity Inspection',
+                  _isSigningUp ? 'Create Account' : 'Welcome to Accurity',
                   textAlign: TextAlign.center,
                   style: AppTextStyles.sectionHeader.copyWith(
-                    color: AppColors.primary,
-                    fontSize: 24,
+                    color: AppColors.textPrimary,
+                    fontSize: 28,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _isSigningUp
+                      ? 'Create an account to get started.'
+                      : 'Sign in to your account.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.listItemSubtitle.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 48),
+                // --- Email Input Field ---
                 TextFormField(
                   controller: _emailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  decoration: _inputDecoration.copyWith(
+                    labelText: 'Email Address',
+                    labelStyle: AppTextStyles.hint,
+                  ),
+                  style: AppTextStyles.input,
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) => (value == null || !value.contains('@'))
                       ? 'Please enter a valid email'
                       : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                // --- Password Input Field ---
                 TextFormField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(labelText: 'Password'),
+                  decoration: _inputDecoration.copyWith(
+                    labelText: 'Password',
+                    labelStyle: AppTextStyles.hint,
+                  ),
+                  style: AppTextStyles.input,
                   obscureText: true,
                   validator: (value) => (value == null || value.length < 6)
                       ? 'Password must be at least 6 characters'
                       : null,
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 48),
+                // --- Primary Button ---
                 BlocBuilder<LoginBloc, LoginState>(
                   builder: (context, state) {
-                    if (state is LoginLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
                     return ElevatedButton(
-                      onPressed: _onFormSubmit,
-                      child: Text(_isSigningUp ? 'SIGN UP' : 'SIGN IN'),
+                      onPressed: state is LoginLoading ? null : _onFormSubmit,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        backgroundColor: AppColors.accent,
+                        foregroundColor: AppColors.textOnPrimary,
+                        elevation: 0,
+                      ),
+                      child: state is LoginLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: AppColors.textOnPrimary,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : Text(
+                              _isSigningUp ? 'SIGN UP' : 'SIGN IN',
+                              style: AppTextStyles.button,
+                            ),
                     );
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                // --- "OR" Divider ---
                 const Row(
                   children: [
-                    Expanded(child: Divider()),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('OR'),
+                    Expanded(
+                      child: Divider(color: AppColors.lightGrey, height: 1),
                     ),
-                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        'OR',
+                        style: TextStyle(
+                          color: AppColors.mediumGrey,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(color: AppColors.lightGrey, height: 1),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.g_mobiledata, size: 28),
-                  label: const Text('Sign In with Google'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                  ),
+                const SizedBox(height: 24),
+                // --- Google Button ---
+                OutlinedButton(
                   onPressed: _onGoogleSignInPressed,
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    side: const BorderSide(
+                      color: AppColors.lightGrey,
+                      width: 2,
+                    ),
+                    backgroundColor: AppColors.surface,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const FaIcon(
+                        FontAwesomeIcons.google,
+                        size: 20,
+                        color: AppColors.textPrimary,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Sign In with Google',
+                        style: AppTextStyles.button.copyWith(
+                          color: AppColors.textPrimary,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 TextButton(
                   onPressed: () => setState(() => _isSigningUp = !_isSigningUp),
                   child: Text(
                     _isSigningUp
                         ? 'Already have an account? Sign In'
                         : 'Need an account? Sign Up',
+                    style: AppTextStyles.listItemSubtitle.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
@@ -175,3 +284,22 @@ class _LoginFormState extends State<LoginForm> {
     );
   }
 }
+
+// Reusable InputDecoration for consistent form field styling.
+const InputDecoration _inputDecoration = InputDecoration(
+  border: OutlineInputBorder(
+    borderRadius: BorderRadius.all(Radius.circular(8)),
+    borderSide: BorderSide(color: AppColors.lightGrey),
+  ),
+  enabledBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.all(Radius.circular(8)),
+    borderSide: BorderSide(color: AppColors.lightGrey),
+  ),
+  focusedBorder: OutlineInputBorder(
+    borderRadius: BorderRadius.all(Radius.circular(8)),
+    borderSide: BorderSide(color: AppColors.primary, width: 2),
+  ),
+  filled: true,
+  fillColor: AppColors.surface,
+  contentPadding: EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+);

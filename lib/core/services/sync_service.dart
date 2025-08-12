@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import '../../data/models/order.model.dart';
 import '../../data/models/sync_result.model.dart';
@@ -11,7 +12,7 @@ import '../../data/models/sync_status.enum.dart';
 import '../../data/repositories/order_repository.dart';
 import 'supabase_service.dart';
 import 'supabase_storage_service.dart';
-import 'supabase_auth_service.dart'; // ✅ Added import
+import 'supabase_auth_service.dart';
 
 class SyncService {
   final OrderRepository _orderRepository;
@@ -20,7 +21,6 @@ class SyncService {
   final SupabaseAuthService _authService;
   final Connectivity _connectivity;
 
-  // ✅ Fix: StreamController should be SyncResult, not SyncState
   final _syncStateController = StreamController<SyncResult>.broadcast();
   Stream<SyncResult> get syncStateStream => _syncStateController.stream;
 
@@ -104,8 +104,10 @@ class SyncService {
             await _orderRepository.updateLocalOrder(updatedOrder);
             successCount++;
           }
-        } catch (e) {
+        } catch (e, stackTrace) {
           allSyncsSuccessful = false;
+          await Sentry.captureException(e, stackTrace: stackTrace);
+
           print('[SyncService] ERROR during sync process: $e');
           String errorMessage = "An unexpected error occurred.";
           if (e is PostgrestException) {

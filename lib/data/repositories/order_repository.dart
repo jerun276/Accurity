@@ -3,13 +3,14 @@ import '../../core/services/supabase_service.dart';
 import '../models/order.model.dart';
 import '../models/sync_status.enum.dart';
 import 'database_repository.dart';
+import '../../core/services/photo_cache_service.dart';
 
 class OrderRepository {
   final DatabaseRepository _db;
   final SupabaseService _supabaseService;
+  final PhotoCacheService _photoCacheService;
 
-  OrderRepository(this._db, this._supabaseService);
-
+  OrderRepository(this._db, this._supabaseService, this._photoCacheService);
 
   Future<Order> getOrder(int localId) async {
     return _db.getOrder(localId);
@@ -45,8 +46,14 @@ class OrderRepository {
   /// Fetches orders from Supabase for the currently logged-in user.
   Future<void> syncFromServer(String userId) async {
     print('[Repo] Starting sync from server for user $userId');
-    // THE FIX: The call to fetchOrdersForUser now correctly passes no arguments.
     final serverOrdersData = await _supabaseService.fetchOrdersForUser();
+
+    for (final orderData in serverOrdersData) {
+      final photoPaths = List<String>.from(orderData['photo_paths'] ?? []);
+      for (final url in photoPaths) {
+        _photoCacheService.cacheImageFromUrl(url);
+      }
+    }
 
     final serverOrders = serverOrdersData
         .map((data) => Order.fromDbMap(data))

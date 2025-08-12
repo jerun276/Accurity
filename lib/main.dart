@@ -11,6 +11,7 @@ import 'core/services/sync_service.dart';
 import 'core/services/supabase_auth_service.dart';
 import 'core/services/supabase_service.dart';
 import 'core/services/supabase_storage_service.dart';
+import 'core/services/photo_cache_service.dart';
 import 'data/repositories/database_repository.dart';
 import 'data/repositories/order_repository.dart';
 
@@ -36,9 +37,10 @@ Future<void> main() async {
   final photoService = PhotoService();
   final connectivity = Connectivity();
   final supabaseStorageService = SupabaseStorageService();
+  final photoCacheService = PhotoCacheService();
 
   // 3. SOLVE THE CIRCULAR DEPENDENCY USING THE SETTER
-  final orderRepository = OrderRepository(databaseRepository, supabaseService);
+  final orderRepository = OrderRepository(databaseRepository, supabaseService, photoCacheService);
 
   final syncService = SyncService(
     orderRepository: orderRepository,
@@ -63,6 +65,7 @@ Future<void> main() async {
         RepositoryProvider.value(value: connectivity),
         RepositoryProvider.value(value: supabaseStorageService),
         RepositoryProvider.value(value: supabaseAuthService),
+        RepositoryProvider.value(value: photoCacheService),
       ],
       child: MultiBlocProvider(
         providers: [BlocProvider.value(value: feedbackBloc)],

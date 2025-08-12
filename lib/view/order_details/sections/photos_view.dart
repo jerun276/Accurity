@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../bloc/order_details_bloc.dart';
 
 class PhotosView extends StatelessWidget {
@@ -49,10 +50,20 @@ class PhotosView extends StatelessWidget {
                               ),
                           itemCount: photos.length,
                           itemBuilder: (context, index) {
-                            return Image.file(
-                              File(photos[index]),
-                              fit: BoxFit.cover,
-                            );
+                            final path = photos[index];
+                            if (path.startsWith('http')) {
+                              return CachedNetworkImage(
+                                imageUrl: path,
+                                fit: BoxFit.cover,
+                                placeholder: (context, url) => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                                errorWidget: (context, url, error) =>
+                                    const Icon(Icons.error),
+                              );
+                            } else {
+                              return Image.file(File(path), fit: BoxFit.cover);
+                            }
                           },
                         ),
                 ),

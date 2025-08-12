@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../data/repositories/database_repository.dart';
 import '../bloc/dropdown_data_bloc.dart';
 import '../constant/app_colors.dart';
@@ -10,6 +11,7 @@ class SearchableDropdownFormField extends StatelessWidget {
   final String? value;
   final String category;
   final Function(String?) onChanged;
+
   const SearchableDropdownFormField({
     super.key,
     required this.label,
@@ -17,6 +19,7 @@ class SearchableDropdownFormField extends StatelessWidget {
     required this.category,
     required this.onChanged,
   });
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -26,8 +29,6 @@ class SearchableDropdownFormField extends StatelessWidget {
         const SizedBox(height: 8),
         InkWell(
           onTap: () {
-            // 1. Create the BLoC instance before showing the sheet,
-            // using the current, valid context to find the repository.
             final dropdownBloc = DropdownDataBloc(
               databaseRepository: context.read<DatabaseRepository>(),
             )..add(FetchDropdownData(category));
@@ -35,22 +36,17 @@ class SearchableDropdownFormField extends StatelessWidget {
                   context: context,
                   isScrollControlled: true,
                   builder: (_) =>
-                      // 2. Use BlocProvider.value to provide the existing BLoC
-                      //    to the new route created by the bottom sheet.
                       BlocProvider.value(
                         value: dropdownBloc,
                         child: _SearchableDropdownSheet(title: label),
                       ),
                 )
                 .then((result) {
-                  // The `then` block is a safer place to handle the result
                   if (result != null) {
                     onChanged(result);
                   }
                 })
                 .whenComplete(() {
-                  // 3. IMPORTANT: Close the BLoC when the sheet is dismissed
-                  //    to prevent memory leaks.
                   dropdownBloc.close();
                 });
           },
@@ -81,10 +77,10 @@ class SearchableDropdownFormField extends StatelessWidget {
   }
 }
 
-// The _SearchableDropdownSheet widget remains exactly the same.
 class _SearchableDropdownSheet extends StatefulWidget {
   final String title;
   const _SearchableDropdownSheet({required this.title});
+
   @override
   State<_SearchableDropdownSheet> createState() =>
       __SearchableDropdownSheetState();
@@ -92,20 +88,22 @@ class _SearchableDropdownSheet extends StatefulWidget {
 
 class __SearchableDropdownSheetState extends State<_SearchableDropdownSheet> {
   final _searchController = TextEditingController();
+  final _customEntryController =
+      TextEditingController(); 
   String _query = '';
+
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() {
-      setState(() {
-        _query = _searchController.text;
-      });
-    });
+    _searchController.addListener(
+      () => setState(() => _query = _searchController.text),
+    );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _customEntryController.dispose();
     super.dispose();
   }
 
@@ -130,20 +128,14 @@ class __SearchableDropdownSheetState extends State<_SearchableDropdownSheet> {
                 controller: _searchController,
                 autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Search...',
+                  hintText: 'Search existing options...',
                   prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: BlocBuilder<DropdownDataBloc, DropdownDataState>(
                   builder: (context, state) {
-                    if (state is DropdownDataLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
                     if (state is DropdownDataLoaded) {
                       final filteredItems = state.items
                           .where(
@@ -159,19 +151,37 @@ class __SearchableDropdownSheetState extends State<_SearchableDropdownSheet> {
                           final item = filteredItems[index];
                           return ListTile(
                             title: Text(item.value),
-                            onTap: () {
-                              Navigator.of(context).pop(item.value);
-                            },
+                            onTap: () => Navigator.of(context).pop(item.value),
                           );
                         },
                       );
                     }
-                    if (state is DropdownDataError) {
-                      return Center(child: Text(state.message));
-                    }
-                    return const SizedBox.shrink();
+                    return const Center(child: CircularProgressIndicator());
                   },
                 ),
+              ),
+              const Divider(height: 24),
+              TextField(
+                controller: _customEntryController,
+                decoration: InputDecoration(
+                  labelText: 'Or enter a custom value',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.add_circle),
+                    color: AppColors.accent,
+                    onPressed: () {
+                      final text = _customEntryController.text.trim();
+                      if (text.isNotEmpty) {
+                        Navigator.of(context).pop(text);
+                      }
+                    },
+                  ),
+                ),
+                onSubmitted: (text) {
+                  final trimmedText = text.trim();
+                  if (trimmedText.isNotEmpty) {
+                    Navigator.of(context).pop(trimmedText);
+                  }
+                },
               ),
             ],
           ),

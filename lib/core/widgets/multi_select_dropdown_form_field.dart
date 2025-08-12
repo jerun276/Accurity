@@ -99,25 +99,35 @@ class _MultiSelectSheet extends StatefulWidget {
 
 class _MultiSelectSheetState extends State<_MultiSelectSheet> {
   final _searchController = TextEditingController();
+  final _customEntryController =
+      TextEditingController();
   late final List<String> _currentSelections;
   String _query = '';
 
   @override
   void initState() {
     super.initState();
-    // Create a mutable copy of the initial selections to manage state locally
     _currentSelections = List<String>.from(widget.initialSelectedOptions);
-    _searchController.addListener(() {
-      setState(() {
-        _query = _searchController.text;
-      });
-    });
+    _searchController.addListener(
+      () => setState(() => _query = _searchController.text),
+    );
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _customEntryController.dispose();
     super.dispose();
+  }
+
+  void _addCustomValue() {
+    final text = _customEntryController.text.trim();
+    if (text.isNotEmpty && !_currentSelections.contains(text)) {
+      setState(() {
+        _currentSelections.add(text);
+        _customEntryController.clear();
+      });
+    }
   }
 
   @override
@@ -139,22 +149,15 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
               const SizedBox(height: 16),
               TextField(
                 controller: _searchController,
-                autofocus: true,
                 decoration: InputDecoration(
-                  hintText: 'Search...',
+                  hintText: 'Search existing options...',
                   prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
               ),
               const SizedBox(height: 16),
               Expanded(
                 child: BlocBuilder<DropdownDataBloc, DropdownDataState>(
                   builder: (context, state) {
-                    if (state is DropdownDataLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
                     if (state is DropdownDataLoaded) {
                       final filteredItems = state.items
                           .where(
@@ -184,22 +187,44 @@ class _MultiSelectSheetState extends State<_MultiSelectSheet> {
                         },
                       );
                     }
-                    if (state is DropdownDataError) {
-                      return Center(child: Text(state.message));
-                    }
-                    return const SizedBox.shrink();
+                    return const Center(child: CircularProgressIndicator());
                   },
                 ),
               ),
+              const Divider(height: 24),
+              TextField(
+                controller: _customEntryController,
+                decoration: InputDecoration(
+                  labelText: 'Add a custom value',
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.add_circle),
+                    onPressed: _addCustomValue,
+                    color: AppColors.accent,
+                  ),
+                ),
+                onSubmitted: (_) => _addCustomValue(),
+              ),
+              const SizedBox(height: 16),
+              if (_currentSelections.isNotEmpty)
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  children: _currentSelections
+                      .map(
+                        (item) => Chip(
+                          label: Text(item),
+                          onDeleted: () =>
+                              setState(() => _currentSelections.remove(item)),
+                        ),
+                      )
+                      .toList(),
+                ),
               const SizedBox(height: 16),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
                 ),
-                onPressed: () {
-                  // Pop the sheet and return the final list of selections
-                  Navigator.of(context).pop(_currentSelections);
-                },
+                onPressed: () => Navigator.of(context).pop(_currentSelections),
                 child: const Text('Done'),
               ),
             ],

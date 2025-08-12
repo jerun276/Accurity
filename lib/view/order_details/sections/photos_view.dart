@@ -51,19 +51,43 @@ class PhotosView extends StatelessWidget {
                           itemCount: photos.length,
                           itemBuilder: (context, index) {
                             final path = photos[index];
-                            if (path.startsWith('http')) {
-                              return CachedNetworkImage(
-                                imageUrl: path,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => const Center(
-                                  child: CircularProgressIndicator(),
+                            return GestureDetector(
+                              onTap: () {
+                                // Navigate to a new screen to view the image in full-screen
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => _FullScreenImageView(
+                                      path: path,
+                                      tag:
+                                          path, // Use the path as a unique Hero tag
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Hero(
+                                tag:
+                                    path, // The same unique tag for a smooth animation
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  child: path.startsWith('http')
+                                      ? CachedNetworkImage(
+                                          imageUrl: path,
+                                          fit: BoxFit.cover,
+                                          placeholder: (context, url) =>
+                                              const Center(
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
+                                          errorWidget: (context, url, error) =>
+                                              const Icon(Icons.error),
+                                        )
+                                      : Image.file(
+                                          File(path),
+                                          fit: BoxFit.cover,
+                                        ),
                                 ),
-                                errorWidget: (context, url, error) =>
-                                    const Icon(Icons.error),
-                              );
-                            } else {
-                              return Image.file(File(path), fit: BoxFit.cover);
-                            }
+                              ),
+                            );
                           },
                         ),
                 ),
@@ -73,6 +97,43 @@ class PhotosView extends StatelessWidget {
         }
         return const SizedBox.shrink();
       },
+    );
+  }
+}
+
+// A new widget to display a single image in full-screen
+class _FullScreenImageView extends StatelessWidget {
+  final String path;
+  final Object tag;
+
+  const _FullScreenImageView({required this.path, required this.tag});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black, // A dark background for the photo view
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(
+          color: Colors.white,
+        ), // White icons on a dark app bar
+      ),
+      body: Center(
+        child: Hero(
+          tag: tag, // The same tag as the thumbnail
+          child: path.startsWith('http')
+              ? CachedNetworkImage(
+                  imageUrl: path,
+                  fit: BoxFit.contain, // Contain the image within the screen
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                  errorWidget: (context, url, error) =>
+                      const Icon(Icons.error, color: Colors.white),
+                )
+              : Image.file(File(path), fit: BoxFit.contain),
+        ),
+      ),
     );
   }
 }

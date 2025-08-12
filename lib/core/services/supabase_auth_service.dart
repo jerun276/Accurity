@@ -1,26 +1,42 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+const String _kUserCacheKey = 'accurity_cached_user_session';
 
 class SupabaseAuthService {
   final SupabaseClient _client = Supabase.instance.client;
+  User? _currentUser;
 
-  User? get currentUser => _client.auth.currentUser;
+  User? get currentUser => _currentUser;
 
-  /// Ensures a user session exists, creating an anonymous one if needed.
-  /// This should be called once when the app starts.
   Future<void> initialize() async {
-    if (currentUser == null) {
-      print(
-        '[AuthService] No user session found. Signing in anonymously for testing.',
-      );
-      try {
-        await _client.auth.signInAnonymously();
-        print('[AuthService] Anonymous sign-in successful.');
-      } catch (e) {
-        print('[AuthService] Anonymous sign-in FAILED: $e');
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString(_kUserCacheKey);
+    if (userJson != null) {
+      _currentUser = User.fromJson(jsonDecode(userJson));
+      print('[AuthService] Loaded user from cache: ${_currentUser?.email}');
+    }
+    _client.auth.onAuthStateChange.listen((data) async {
+      final session = data.session;
+      _currentUser = session?.user;
+
+      if (session != null) {
+        print(
+          '[AuthService] onAuthStateChange: User is signed in (${_currentUser?.email})',
+        );
+        await _cacheUserSession(session.user);
+      } else {
+        print('[AuthService] onAuthStateChange: User is signed out.');
+        await _clearUserCache();
       }
-    } else {
-      print('[AuthService] Existing user session found.');
+    });
+
+    _currentUser = _client.auth.currentUser;
+    if (_currentUser != null) {
+      print('[AuthService] Initial user check found: ${_currentUser?.email}');
+      await _cacheUserSession(_currentUser!);
     }
   }
 
@@ -42,10 +58,6 @@ class SupabaseAuthService {
     }
   }
 
-  Future<void> signOut() async {
-    await _client.auth.signOut();
-  }
-
   Future<String?> signInWithGoogle() async {
     try {
       const redirectTo = 'com.example.accurity://callback';
@@ -57,5 +69,19 @@ class SupabaseAuthService {
     } on AuthException catch (e) {
       return e.message;
     }
+  }
+
+  Future<void> signOut() async {
+    await _client.auth.signOut();
+  }
+
+  Future<void> _cacheUserSession(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kUserCacheKey, jsonEncode(user.toJson()));
+  }
+
+  Future<void> _clearUserCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kUserCacheKey);
   }
 }

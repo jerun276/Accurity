@@ -125,21 +125,40 @@ class OrderListContent extends StatelessWidget {
               ),
             );
           }
+
+          final bool isRefreshDisabled = state.hasOfflineChanges;
+
+          if (isRefreshDisabled) {
+            Future.delayed(Duration.zero, () {
+              // ignore: use_build_context_synchronously
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Manual sync is required. Please tap the cloud icon to upload your offline changes.',
+                  ),
+                  duration: Duration(seconds: 5),
+                ),
+              );
+            });
+          }
+
           return RefreshIndicator(
             color: AppColors.primary,
-            onRefresh: () async {
-              context.read<OrderListBloc>().add(SyncOrdersFromServer());
-            },
+            onRefresh: isRefreshDisabled
+                ? () async {}
+                : () async {
+                    context.read<OrderListBloc>().add(SyncOrdersFromServer());
+                  },
             child: ListView.builder(
-              padding: const EdgeInsets.all(12.0), // Increased padding
+              padding: const EdgeInsets.all(12.0),
               itemCount: state.orders.length,
               itemBuilder: (context, index) {
                 final order = state.orders[index];
                 return Card(
                   color: AppColors.surface,
-                  elevation: 6.0, // Increased elevation
+                  elevation: 6.0,
                   margin: const EdgeInsets.symmetric(
-                    vertical: 8.0, // Increased vertical margin
+                    vertical: 8.0,
                     horizontal: 0,
                   ),
                   shape: RoundedRectangleBorder(
@@ -147,13 +166,13 @@ class OrderListContent extends StatelessWidget {
                   ),
                   child: ListTile(
                     contentPadding: const EdgeInsets.symmetric(
-                      vertical: 12.0, // Increased vertical padding
+                      vertical: 12.0,
                       horizontal: 16.0,
                     ),
                     title: Text(
                       order.address ?? 'No Address',
                       style: AppTextStyles.listItemTitle.copyWith(
-                        fontSize: 18.0, // Increased font size for the title
+                        fontSize: 18.0,
                       ),
                     ),
                     subtitle: Text(

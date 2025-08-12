@@ -1,3 +1,4 @@
+import 'package:accurity/data/models/sync_status.enum.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import '../../../core/services/supabase_auth_service.dart';
@@ -34,7 +35,14 @@ class OrderListBloc extends Bloc<OrderListEvent, OrderListState> {
     }
     try {
       final orders = await _orderRepository.getAllOrders();
-      emit(OrderListLoaded(orders));
+      final hasOfflineChanges = orders.any(
+        (order) =>
+            order.syncStatus == SyncStatus.localOnly ||
+            order.syncStatus == SyncStatus.needsUpdate,
+      );
+      print('[OrderListBloc] Has offline changes: $hasOfflineChanges');
+
+      emit(OrderListLoaded(orders, hasOfflineChanges: hasOfflineChanges));
     } catch (e) {
       emit(OrderListError('Failed to fetch local orders: ${e.toString()}'));
     }

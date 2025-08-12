@@ -4,9 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constant/app_colors.dart';
 import '../../../core/constant/text_styles.dart';
 import '../../../core/services/photo_service.dart';
-import '../../../data/repositories/order_repository.dart';
-import '../../../core/widgets/sync_status_indicator.dart';
 import '../../../core/services/sync_service.dart';
+import '../../../data/repositories/order_repository.dart';
 import 'bloc/order_details_bloc.dart';
 import 'sections/basement_view.dart';
 import 'sections/component_age_view.dart';
@@ -83,14 +82,21 @@ class OrderDetailsPage extends StatelessWidget {
 
     return DefaultTabController(
       length: _sectionTitles.length,
-      // ignore: deprecated_member_use
-      child: WillPopScope(
-        onWillPop: () async {
+      child: PopScope(
+        // THE CRITICAL FIX: Set canPop to `false` to prevent the screen from
+        // closing automatically. We will handle the pop manually.
+        canPop: false,
+
+        onPopInvoked: (didPop) async {
+          // This safeguard prevents the logic from running if a pop happened for other reasons.
+          if (didPop) return;
+
           final shouldPop = await showDialog<bool>(
             context: context,
-            builder: (context) => AlertDialog(
+            barrierDismissible: false,
+            builder: (dialogContext) => AlertDialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0), // Rounded corners
+                borderRadius: BorderRadius.circular(16.0),
               ),
               backgroundColor: AppColors.surface,
               title: Text(
@@ -101,15 +107,17 @@ class OrderDetailsPage extends StatelessWidget {
                 ),
               ),
               content: Text(
-                'All changes have been saved automatically. Do you want to go back to the order list?',
+                'Your changes have been saved locally. Do you want to sync with the cloud now?',
                 style: AppTextStyles.listItemSubtitle,
               ),
               actions: [
-                SyncStatusIndicator(),
                 TextButton(
-                  onPressed: () => Navigator.pop(context, false),
+                  onPressed: () => Navigator.pop(
+                    dialogContext,
+                    false,
+                  ), // Just close the dialog
                   child: Text(
-                    'Stay',
+                    'Cancel',
                     style: AppTextStyles.button.copyWith(
                       color: AppColors.primary,
                       letterSpacing: 0,
@@ -118,8 +126,14 @@ class OrderDetailsPage extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    syncService.syncUnsyncedOrders();
-                    Navigator.pop(context, true);
+                    print(
+                      '[OrderDetailsView] User pressed Exit. Triggering background sync.',
+                    );
+                    syncService.syncUnsyncedOrders(); // Fire-and-forget sync
+                    Navigator.pop(
+                      dialogContext,
+                      true,
+                    ); // Close the dialog and signal to pop the screen
                   },
                   child: Text(
                     'Exit & Sync',
@@ -132,7 +146,13 @@ class OrderDetailsPage extends StatelessWidget {
               ],
             ),
           );
-          return shouldPop ?? false;
+
+          // If the user tapped "Exit & Sync", then `shouldPop` will be true.
+          if (shouldPop ?? false) {
+            // Manually pop the screen now.
+            // ignore: use_build_context_synchronously
+            Navigator.of(context).pop();
+          }
         },
         child: Scaffold(
           backgroundColor: AppColors.background,
@@ -148,7 +168,7 @@ class OrderDetailsPage extends StatelessWidget {
                     state.order.address ?? 'Inspection Details',
                     style: AppTextStyles.sectionHeader.copyWith(
                       color: AppColors.textOnPrimary,
-                      fontSize: 20, // Slightly smaller to fit with tabs
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -163,13 +183,10 @@ class OrderDetailsPage extends StatelessWidget {
             bottom: TabBar(
               isScrollable: true,
               indicatorColor: AppColors.accent,
-              labelColor:
-                  AppColors.textOnPrimary, // Color of the selected tab label
-              unselectedLabelColor: AppColors.textOnPrimary.withOpacity(
-                0.7,
-              ), // Color of unselected labels
+              labelColor: AppColors.textOnPrimary,
+              unselectedLabelColor: AppColors.textOnPrimary.withOpacity(0.7),
               labelStyle: AppTextStyles.listItemSubtitle.copyWith(
-                fontWeight: FontWeight.w600, // Make the labels semi-bold
+                fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
               tabs: _sectionTitles.map((title) => Tab(text: title)).toList(),

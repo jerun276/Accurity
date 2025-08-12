@@ -2,7 +2,7 @@ import 'dart:async';
 // ignore: depend_on_referenced_packages
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-
+import '../../view/order_list/bloc/order_list_bloc.dart';
 import '../../data/models/sync_result.model.dart';
 import '../../data/models/sync_state.enum.dart';
 import '../services/sync_service.dart';
@@ -27,18 +27,25 @@ class ShowFeedbackSnackbar extends FeedbackState {
 // --- BLOC ---
 class FeedbackBloc extends Bloc<SyncResult, FeedbackState> {
   final SyncService _syncService;
+  final OrderListBloc _orderListBloc;
   late final StreamSubscription _syncSubscription;
 
-  FeedbackBloc({required SyncService syncService})
-    : _syncService = syncService,
-      super(FeedbackInitial()) {
+  FeedbackBloc({
+    required SyncService syncService,
+    required OrderListBloc orderListBloc,
+  }) : _syncService = syncService,
+       _orderListBloc = orderListBloc,
+       super(FeedbackInitial()) {
     _syncSubscription = _syncService.syncStateStream.listen((syncResult) {
       add(syncResult);
     });
 
     on<SyncResult>((event, emit) {
-      if (event.state == SyncState.success && event.message != null) {
-        emit(ShowFeedbackSnackbar(event.message!));
+      if (event.state == SyncState.success) {
+        if (event.message != null) {
+          emit(ShowFeedbackSnackbar(event.message!));
+        }
+        _orderListBloc.add(FetchLocalOrders());
       } else if (event.state == SyncState.failure && event.message != null) {
         emit(ShowFeedbackSnackbar(event.message!, isError: true));
       }

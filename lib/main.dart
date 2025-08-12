@@ -1,3 +1,4 @@
+import 'package:accurity/view/order_list/bloc/order_list_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
@@ -62,8 +63,16 @@ Future<void> main() async {
         connectivity: connectivity,
       );
 
+      final orderListBloc = OrderListBloc(
+        orderRepository: orderRepository,
+        authService: supabaseAuthService,
+      );
+
       // --- 4. CREATE THE GLOBAL BLOC ---
-      final feedbackBloc = FeedbackBloc(syncService: syncService);
+      final feedbackBloc = FeedbackBloc(
+        syncService: syncService,
+        orderListBloc: orderListBloc,
+      );
 
       // --- 5. RUN THE APP ---
       runApp(
@@ -78,6 +87,8 @@ Future<void> main() async {
             RepositoryProvider.value(value: supabaseStorageService),
             RepositoryProvider.value(value: supabaseAuthService),
             RepositoryProvider.value(value: photoCacheService),
+            BlocProvider.value(value: orderListBloc),
+            BlocProvider.value(value: feedbackBloc),
           ],
           child: MultiBlocProvider(
             providers: [BlocProvider.value(value: feedbackBloc)],

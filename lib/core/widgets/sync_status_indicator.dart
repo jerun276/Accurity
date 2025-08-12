@@ -10,7 +10,6 @@ class SyncStatusIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Read the single instance of the SyncService provided in main.dart
     final syncService = context.read<SyncService>();
 
     return StreamBuilder<SyncResult>(
@@ -18,19 +17,17 @@ class SyncStatusIndicator extends StatelessWidget {
       initialData: SyncResult(SyncState.idle),
       builder: (context, snapshot) {
         final state = snapshot.data?.state ?? SyncState.idle;
+        final bool isSyncing = state == SyncState.syncing;
 
         Widget iconWidget;
         switch (state) {
           case SyncState.syncing:
-            iconWidget = const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.0,
-                ),
+            iconWidget = const SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2.0,
               ),
             );
             break;
@@ -50,9 +47,25 @@ class SyncStatusIndicator extends StatelessWidget {
             );
             break;
         }
-        return Padding(
-          padding: const EdgeInsets.only(right: 8.0),
-          child: iconWidget,
+        return Tooltip(
+          message: isSyncing
+              ? 'Sync in progress...'
+              : 'Tap to sync local changes',
+          child: InkWell(
+            onTap: isSyncing
+                ? null
+                : () {
+                    print(
+                      '[SyncStatusIndicator] Tapped. Triggering manual sync.',
+                    );
+                    syncService.syncUnsyncedOrders();
+                  },
+            customBorder: const CircleBorder(),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: iconWidget,
+            ),
+          ),
         );
       },
     );

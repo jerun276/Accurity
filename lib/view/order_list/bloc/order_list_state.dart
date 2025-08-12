@@ -16,11 +16,12 @@ final class OrderListLoading extends OrderListState {}
 /// State representing that the orders have been successfully loaded.
 final class OrderListLoaded extends OrderListState {
   final List<Order> orders;
+  final bool hasOfflineChanges;
 
-  const OrderListLoaded(this.orders);
+  const OrderListLoaded(this.orders, {required this.hasOfflineChanges});
 
   @override
-  List<Object> get props => [orders];
+  List<Object> get props => [orders, hasOfflineChanges];
 }
 
 /// State indicating an error occurred while fetching orders.

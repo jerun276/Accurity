@@ -44,9 +44,89 @@ class OrderRepository {
   }
 
   /// Fetches orders from Supabase for the currently logged-in user.
+  // Future<void> syncFromServer(String userId) async {
+  //   print('[Repo] Starting sync from server for user $userId');
+  //   final serverOrdersData = await _supabaseService.fetchOrdersForUser();
+
+  //   for (final orderData in serverOrdersData) {
+  //     final photoPaths = List<String>.from(orderData['photo_paths'] ?? []);
+  //     for (final url in photoPaths) {
+  //       _photoCacheService.cacheImageFromUrl(url);
+  //     }
+  //   }
+
+  //   final serverOrders = serverOrdersData
+  //       .map((data) => Order.fromDbMap(data))
+  //       .toList();
+
+  //   await _db.clearAllOrders();
+
+  //   final ordersToSave = serverOrders
+  //       .map((order) => order.copyWith(syncStatus: SyncStatus.synced))
+  //       .toList();
+
+  //   for (final order in ordersToSave) {
+  //     await _db.saveOrder(order);
+  //   }
+
+  //   print(
+  //     '[Repo] Sync from server complete. Saved ${ordersToSave.length} orders locally.',
+  //   );
+  // }
+
   Future<void> syncFromServer(String userId) async {
-    print('[Repo] Starting sync from server for user $userId');
+    print('[Repo] Starting two-way sync for user $userId');
+
+    final allLocalOrders = await _db.getAllOrders();
+
+    final localOnlyOrders = allLocalOrders
+        .where((order) => order.syncStatus == SyncStatus.localOnly)
+        .toList();
+    final needsUpdateOrders = allLocalOrders
+        .where((order) => order.syncStatus == SyncStatus.needsUpdate)
+        .toList();
+
+    for (final order in localOnlyOrders) {
+      try {
+        final newSupabaseId = await _supabaseService.createOrder(order);
+
+        if (newSupabaseId != null) {
+          await updateLocalOrder(
+            order.copyWith(
+              supabaseId: newSupabaseId,
+              syncStatus: SyncStatus.synced,
+            ),
+          );
+        } else {
+          print(
+            'Supabase returned a null ID for order ${order.localId}. Cannot update sync status.',
+          );
+        }
+      } catch (e) {
+        print(
+          'Failed to create order on Supabase: ${order.localId}. Error: $e',
+        );
+      }
+    }
+
+    for (final order in needsUpdateOrders) {
+      try {
+        if (order.supabaseId != null) {
+          await _supabaseService.updateOrder(order);
+          await updateLocalOrder(order.copyWith(syncStatus: SyncStatus.synced));
+        }
+      } catch (e) {
+        print(
+          'Failed to update order on Supabase: ${order.localId}. Error: $e',
+        );
+      }
+    }
+
+    print('[Repo] Local changes pushed. Now fetching server data...');
     final serverOrdersData = await _supabaseService.fetchOrdersForUser();
+    final serverOrders = serverOrdersData
+        .map((data) => Order.fromDbMap(data))
+        .toList();
 
     for (final orderData in serverOrdersData) {
       final photoPaths = List<String>.from(orderData['photo_paths'] ?? []);
@@ -54,10 +134,6 @@ class OrderRepository {
         _photoCacheService.cacheImageFromUrl(url);
       }
     }
-
-    final serverOrders = serverOrdersData
-        .map((data) => Order.fromDbMap(data))
-        .toList();
 
     await _db.clearAllOrders();
 
@@ -70,7 +146,7 @@ class OrderRepository {
     }
 
     print(
-      '[Repo] Sync from server complete. Saved ${ordersToSave.length} orders locally.',
+      '[Repo] Two-way sync complete. Local database is now in sync with the server.',
     );
   }
 

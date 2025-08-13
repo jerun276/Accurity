@@ -1,7 +1,7 @@
 import 'package:accurity/core/services/sync_service.dart';
+import 'package:accurity/data/models/sync_status.enum.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../core/constant/app_colors.dart';
 import '../../core/constant/text_styles.dart';
 import '../../core/services/supabase_auth_service.dart';
@@ -30,7 +30,6 @@ class OrderListView extends StatelessWidget {
 class OrderListPage extends StatelessWidget {
   const OrderListPage({super.key});
 
-  // NEW: A function to show the logout confirmation dialog
   Future<void> _showLogoutConfirmationDialog(BuildContext context) async {
     final result = await showDialog<bool>(
       context: context,
@@ -66,7 +65,6 @@ class OrderListPage extends StatelessWidget {
     );
 
     if (result == true && context.mounted) {
-      // Only log out if the user confirmed
       context.read<OrderListBloc>().add(LogoutButtonPressed());
     }
   }
@@ -94,7 +92,6 @@ class OrderListPage extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Log out',
-            // CRITICAL FIX: Call the new confirmation dialog function
             onPressed: () => _showLogoutConfirmationDialog(context),
           ),
         ],
@@ -136,7 +133,6 @@ class OrderListPage extends StatelessWidget {
 class OrderListContent extends StatelessWidget {
   const OrderListContent({super.key});
 
-  // NEW: A function to show the delete confirmation dialog
   Future<bool?> _showDeleteConfirmationDialog(BuildContext context) async {
     return showDialog<bool>(
       context: context,
@@ -172,23 +168,66 @@ class OrderListContent extends StatelessWidget {
     );
   }
 
+  IconData _getSyncStatusIcon(SyncStatus status) {
+    switch (status) {
+      case SyncStatus.synced:
+        return Icons.cloud_done;
+      case SyncStatus.localOnly:
+        return Icons.cloud_off;
+      case SyncStatus.needsUpdate:
+        return Icons.cloud_upload;
+    }
+  }
+
+  Color _getSyncStatusColor(SyncStatus status) {
+    switch (status) {
+      case SyncStatus.synced:
+        return AppColors.success;
+      case SyncStatus.localOnly:
+        return AppColors.warning;
+      case SyncStatus.needsUpdate:
+        return AppColors.accent;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<OrderListBloc, OrderListState>(
       builder: (context, state) {
         if (state is OrderListLoading) {
           return const Center(
-            child: CircularProgressIndicator(color: AppColors.primary),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: AppColors.primary),
+                SizedBox(height: 16),
+                Text(
+                  'Loading inspections...',
+                  style: AppTextStyles.listItemTitle,
+                ),
+              ],
+            ),
           );
         }
         if (state is OrderListError) {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'Error: ${state.message}',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.hint,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    color: AppColors.error,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${state.message}',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.listItemTitle,
+                  ),
+                ],
               ),
             ),
           );
@@ -196,10 +235,17 @@ class OrderListContent extends StatelessWidget {
         if (state is OrderListLoaded) {
           if (state.orders.isEmpty) {
             return const Center(
-              child: Text(
-                'No inspections found.\nPress the + button to create one.',
-                textAlign: TextAlign.center,
-                style: AppTextStyles.listItemSubtitle,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add_task, color: AppColors.primary, size: 48),
+                  SizedBox(height: 16),
+                  Text(
+                    'No inspections found.\nPress the + button to create one.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.listItemTitle,
+                  ),
+                ],
               ),
             );
           }
@@ -232,15 +278,32 @@ class OrderListContent extends StatelessWidget {
               itemBuilder: (context, index) {
                 final order = state.orders[index];
                 return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(vertical: 8.0,horizontal: 4.0),
                   child: Dismissible(
                     key: ValueKey(order.localId),
                     direction: DismissDirection.endToStart,
                     background: Container(
-                      color: AppColors.errorLight,
+                      decoration: BoxDecoration(
+                        color: AppColors.errorLight,
+                        borderRadius: BorderRadius.circular(12.0),
+                      ),
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.only(right: 20.0),
-                      child: const Icon(Icons.delete, color: Colors.white),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Delete',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(Icons.delete, color: Colors.white, size: 28),
+                        ],
+                      ),
                     ),
                     confirmDismiss: (direction) async {
                       return await _showDeleteConfirmationDialog(context);
@@ -277,14 +340,26 @@ class OrderListContent extends StatelessWidget {
                             fontSize: 18.0,
                           ),
                         ),
+                        // CRITICAL FIX: Reverted subtitle to its previous state
                         subtitle: Text(
-                          'File: ${order.firmFileNumber ?? 'N/A'}\nStatus: ${order.syncStatus.name}',
+                          'File: ${order.firmFileNumber ?? 'N/A'}',
                           style: AppTextStyles.listItemSubtitle,
                         ),
-                        trailing: const Icon(
-                          Icons.arrow_forward_ios,
-                          color: AppColors.mediumGrey,
-                          size: 16,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getSyncStatusIcon(order.syncStatus),
+                              color: _getSyncStatusColor(order.syncStatus),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(
+                              Icons.arrow_forward_ios,
+                              color: AppColors.mediumGrey,
+                              size: 16,
+                            ),
+                          ],
                         ),
                         onTap: () async {
                           await Navigator.of(context).push(

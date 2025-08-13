@@ -31,7 +31,14 @@ class AppColors {
   /// Standard color for error messages and delete icons.
   static const Color error = Color(0xFFB00020);
 
+  /// A lighter shade of the error color, used for backgrounds or less prominent error messages.
   static const Color errorLight = Color.fromARGB(255, 255, 0, 0);
+
+  /// A color used for success messages or confirmations.
+  static const Color success = Color(0xFF4CAF50);
+
+  /// A color used for warning messages or alerts.
+  static const Color warning = Color(0xFFFFC107);
 
   // --- TEXT COLORS ---
   /// The default color for body text.

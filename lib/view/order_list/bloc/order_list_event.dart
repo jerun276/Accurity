@@ -14,3 +14,9 @@ final class SyncOrdersFromServer extends OrderListEvent {}
 
 /// Dispatches a logout request.
 final class LogoutButtonPressed extends OrderListEvent {}
+
+final class OrderDeleted extends OrderListEvent {
+  final int localId;
+  final String? supabaseId;
+  const OrderDeleted({required this.localId, this.supabaseId});
+}

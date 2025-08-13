@@ -77,4 +77,17 @@ class OrderRepository {
   Future<void> clearLocalData() async {
     await _db.clearAllOrders();
   }
+
+  Future<void> deleteOrder(int localId, String? supabaseId) async {
+    await _db.deleteOrder(localId);
+
+    if (supabaseId != null) {
+      try {
+        await _supabaseService.deleteOrder(supabaseId);
+      } catch (e) {
+        print('Failed to delete from Supabase: $e');
+        rethrow;
+      }
+    }
+  }
 }

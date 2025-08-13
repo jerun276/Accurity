@@ -66,6 +66,7 @@ Future<void> main() async {
       final orderListBloc = OrderListBloc(
         orderRepository: orderRepository,
         authService: supabaseAuthService,
+        syncService: syncService,
       );
 
       // --- 4. CREATE THE GLOBAL BLOC ---
@@ -89,9 +90,13 @@ Future<void> main() async {
             RepositoryProvider.value(value: photoCacheService),
             BlocProvider.value(value: orderListBloc),
             BlocProvider.value(value: feedbackBloc),
+            RepositoryProvider.value(value: syncService),
           ],
           child: MultiBlocProvider(
-            providers: [BlocProvider.value(value: feedbackBloc)],
+            providers: [
+              BlocProvider.value(value: feedbackBloc),
+              BlocProvider.value(value: orderListBloc),
+            ],
             child: const MyApp(),
           ),
         ),

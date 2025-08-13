@@ -24,17 +24,12 @@ class DatabaseRepository {
 
   DatabaseRepository({required this.dbPath});
 
-  /// Provides a singleton-like, ready-to-use database instance.
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDB();
     return _database!;
   }
 
-  /// Initializes the database connection.
-  ///
-  /// This method sets up the database, creates tables if they don't exist,
-  /// and seeds the initial dropdown data.
   Future<void> init() async {
     _database = await _initDB();
   }
@@ -44,9 +39,6 @@ class DatabaseRepository {
     return await openDatabase(path, version: 1, onCreate: _onCreate);
   }
 
-  /// Called when the database is created for the first time.
-  ///
-  /// This is where the schema creation and initial data seeding happens.
   Future<void> _onCreate(Database db, int version) async {
     await _createTables(db);
     await _seedDropdowns(db);
@@ -145,10 +137,6 @@ class DatabaseRepository {
     ''');
   }
 
-  /// Inserts the initial data for all dropdown menus into the database.
-  /// This data comes directly from the "Inspection App Fields.csv".
-  /// Inserts the initial data for all dropdown menus into the database.
-  /// This data comes directly from the "Inspection App Fields.csv".
   Future<void> _seedDropdowns(Database db) async {
     final batch = db.batch();
 
@@ -554,14 +542,12 @@ class DatabaseRepository {
     await batch.commit(noResult: true);
   }
 
-  /// Helper to add a list of items for a specific category to a batch operation.
   void _addDropdownToBatch(Batch batch, String category, List<String> values) {
     for (final value in values) {
       batch.insert(_dropdownItemsTable, {'category': category, 'value': value});
     }
   }
 
-  /// Saves an order to the database.
   Future<Order> saveOrder(Order order) async {
     final db = await database;
     final map = order.toDbMap();
@@ -579,7 +565,6 @@ class DatabaseRepository {
     return order.copyWith(localId: id);
   }
 
-  /// Retrieves a single order by its local ID.
   Future<Order> getOrder(int localId) async {
     final db = await database;
     final maps = await db.query(
@@ -593,14 +578,15 @@ class DatabaseRepository {
     throw Exception('Order with ID $localId not found');
   }
 
-  /// Retrieves all orders from the database.
   Future<List<Order>> getAllOrders() async {
     final db = await database;
-    final maps = await db.query(_ordersTable, orderBy: 'localId DESC');
+    final maps = await db.query(
+      _ordersTable,
+      orderBy: 'client_file_number DESC',
+    );
     return maps.map((map) => Order.fromDbMap(map)).toList();
   }
 
-  /// Retrieves a list of orders that match a specific sync status.
   Future<List<Order>> getOrdersWithStatus(List<SyncStatus> statuses) async {
     final db = await database;
     final statusStrings = statuses.map((s) => s.name).toList();
@@ -613,7 +599,6 @@ class DatabaseRepository {
     return maps.map((map) => Order.fromDbMap(map)).toList();
   }
 
-  /// Retrieves all dropdown items for a specific category.
   Future<List<DropdownItem>> getDropdownItems(String category) async {
     final db = await database;
     final maps = await db.query(
@@ -625,7 +610,6 @@ class DatabaseRepository {
     return maps.map((map) => DropdownItem.fromMap(map)).toList();
   }
 
-  /// Updates an existing order in the database.
   Future<void> updateLocalOrder(Order order) async {
     final db = await database;
     await db.update(
@@ -634,5 +618,10 @@ class DatabaseRepository {
       where: 'localId = ?',
       whereArgs: [order.localId],
     );
+  }
+
+  Future<void> deleteOrder(int localId) async {
+    final db = await database;
+    await db.delete(_ordersTable, where: 'localId = ?', whereArgs: [localId]);
   }
 }

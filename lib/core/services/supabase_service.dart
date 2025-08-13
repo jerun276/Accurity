@@ -39,4 +39,8 @@ class SupabaseService {
       return []; // Return an empty list on error
     }
   }
+
+  Future<void> deleteOrder(String supabaseId) async {
+    await _client.from(_tableName).delete().eq('id', supabaseId);
+  }
 }

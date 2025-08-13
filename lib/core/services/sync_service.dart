@@ -67,13 +67,14 @@ class SyncService {
       final unsyncedOrders = await _orderRepository.getUnsyncedOrders();
       if (unsyncedOrders.isEmpty) {
         print('[SyncService] No unsynced orders to process.');
+        // If there's nothing to sync, we immediately go to idle.
         _syncStateController.add(SyncResult(SyncState.idle));
         _isSyncing = false;
         return;
       }
 
       int successCount = 0;
-      bool allSyncsSuccessful = true; // ✅ Fix: define this
+      int totalOrdersToSync = unsyncedOrders.length;
 
       for (var order in unsyncedOrders) {
         try {
@@ -105,44 +106,58 @@ class SyncService {
             successCount++;
           }
         } catch (e, stackTrace) {
-          allSyncsSuccessful = false;
           await Sentry.captureException(e, stackTrace: stackTrace);
-
-          print('[SyncService] ERROR during sync process: $e');
-          String errorMessage = "An unexpected error occurred.";
-          if (e is PostgrestException) {
-            errorMessage = "Database Error: ${e.message}";
-          } else if (e is StorageException) {
-            errorMessage = "Storage Error: ${e.message}";
-          } else {
-            errorMessage = e.toString().replaceFirst('Exception: ', '');
-          }
-
-          _syncStateController.add(
-            SyncResult(
-              SyncState.failure,
-              message: "Sync failed: $errorMessage",
-            ),
+          print(
+            '[SyncService] ERROR during sync of order ${order.localId}: $e',
           );
+          // Do not rethrow, let the loop continue with other orders.
+          // The final state will reflect the failure.
         }
       }
 
-      // ✅ Final result after loop
-      if (successCount > 0 && allSyncsSuccessful) {
+      // Determine the final sync state based on the results of the loop.
+      if (successCount == totalOrdersToSync) {
         _syncStateController.add(
           SyncResult(
             SyncState.success,
             message: "Sync complete! $successCount order(s) updated.",
           ),
         );
-      } else if (!allSyncsSuccessful) {
+      } else if (successCount > 0) {
         _syncStateController.add(
-          SyncResult(SyncState.failure, message: "Some orders failed to sync."),
+          SyncResult(
+            SyncState.failure,
+            message:
+                "Sync partially failed. $successCount of $totalOrdersToSync orders were updated.",
+          ),
+        );
+      } else {
+        _syncStateController.add(
+          SyncResult(SyncState.failure, message: "All orders failed to sync."),
         );
       }
+    } catch (e, stackTrace) {
+      // This catches catastrophic errors like no internet or no authenticated user.
+      await Sentry.captureException(e, stackTrace: stackTrace);
+      print('[SyncService] FATAL ERROR during sync process: $e');
+
+      String errorMessage = "An unexpected error occurred.";
+      if (e is PostgrestException) {
+        errorMessage = "Database Error: ${e.message}";
+      } else if (e is StorageException) {
+        errorMessage = "Storage Error: ${e.message}";
+      } else {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+      }
+
+      _syncStateController.add(
+        SyncResult(SyncState.failure, message: "Sync failed: $errorMessage"),
+      );
     } finally {
       _isSyncing = false;
+      // Wait a moment before returning to idle to show the user the final status.
       await Future.delayed(const Duration(seconds: 3));
+      // Only return to idle if another sync hasn't started in the meantime.
       if (!_isSyncing) {
         _syncStateController.add(SyncResult(SyncState.idle));
       }
@@ -177,12 +192,18 @@ class SyncService {
             );
             cloudPhotoUrls.add(publicUrl);
             print('[SyncService] Photo uploaded successfully. URL: $publicUrl');
-          } catch (e) {
+          } catch (e, stackTrace) {
             print('[SyncService] FAILED to upload photo: $path. Error: $e');
+            // Log to Sentry
+            await Sentry.captureException(e, stackTrace: stackTrace);
+            // On failure, keep the local path to retry later.
             cloudPhotoUrls.add(path);
           }
         } else {
           print('[SyncService] Local photo file not found, skipping: $path');
+          // If the file is not found, we treat this as a failure for this specific photo.
+          // It's best to keep the path to indicate an issue to the user.
+          cloudPhotoUrls.add(path);
         }
       }
     }

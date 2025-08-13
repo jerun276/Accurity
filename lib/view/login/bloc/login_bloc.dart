@@ -29,10 +29,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       event.password,
     );
     if (result == null) {
-      // On success, emit the success state to trigger navigation.
       emit(LoginSuccess());
     } else {
-      // On failure, emit the failure state with the error message.
       emit(LoginFailure(error: result));
     }
   }
@@ -48,11 +46,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       event.password,
     );
     if (result == null) {
-      // On successful sign-up, Supabase automatically signs the user in.
-      // So we can emit the success state to trigger navigation.
       emit(LoginSuccess());
     } else {
-      // On failure, emit the failure state with the error message.
       emit(LoginFailure(error: result));
     }
   }
@@ -67,9 +62,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
     if (result != null) {
       emit(LoginFailure(error: result));
-    }
-    else if (state is LoginLoading) {
-      emit(LoginInitial());
+    } else {
+      emit(LoginSuccess());
     }
   }
 }
